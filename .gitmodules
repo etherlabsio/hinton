@@ -1,0 +1,3 @@
+[submodule "text_preprocessing"]
+	path = community_detection/text_preprocessing
+	url = https://github.com/reaganrewop/text_preprocessing
