@@ -1,7 +1,6 @@
 from model_loader import ModelLoader
 from text_utils import *
 
-
 config_path = '.artifacts/bert_config.json'
 mind_path = '.artifacts/mind.pkl'
 model_path = '.artifacts/model.bin'
