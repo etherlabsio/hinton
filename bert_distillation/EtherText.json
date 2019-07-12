@@ -1,0 +1,10 @@
+{
+    "task": "infer",
+    "vocab_file": "uncased_L-12_H-768_A-12/vocab.txt",
+    "data_file": { "train": "/home/shivam/Desktop/bert_distillation/data/ether_meetings/train_nsp.csv",
+                   "eval": "/home/shivam/Desktop/bert_distillation/data/ether_meetings/val_nsp.csv"   },
+    "max_len": 128,
+    "comments": [
+        ""
+    ]
+}
