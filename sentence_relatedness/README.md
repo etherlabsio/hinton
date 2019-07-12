@@ -1,5 +1,5 @@
-<h2>Calculating Sentence relatedness bwtewwn two sentences <br>
-*Calculates cosine similarity between nown phrases in the sentences
+<h2>Calculating Sentence relatedness bwtewwn two sentences </h2><br>
+Calculates cosine similarity between nown phrases in the sentences <br>
 
 **Currnet Approach
 * Extract candidate noun-phrases - `{(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}`
