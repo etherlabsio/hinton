@@ -1,5 +1,6 @@
-#Calculating Sentence relatedness bwtewwn two sentences
+<h2>Calculating Sentence relatedness bwtewwn two sentences <br>
 *Calculates cosine similarity between nown phrases in the sentences
+
 **Currnet Approach
 * Extract candidate noun-phrases - `{(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}`
 * Generate noun-phrase embedding - sum of corresponding BERT token features
