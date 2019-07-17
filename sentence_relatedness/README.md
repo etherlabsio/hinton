@@ -2,11 +2,9 @@
 
 **Current Approach**
 * Extract candidate phrases: 
-      ```
-	{(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}
+      ```{(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}
 	{<NN.*>+<VB.*>+}
-	{<VB.*>+<NN.*>+}
-```
+	{<VB.*>+<NN.*>+}```
 * Generate noun-phrase embedding - sum of corresponding BERT token features
 * Calculate cosine similarity between noun-phrases of sentences
 * Final score is the maximum of all pair-wise scores
