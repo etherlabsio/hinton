@@ -1,4 +1,4 @@
-#Calculating Sentence relatedness
+<h1>Calculating Sentence relatedness</h1>
 
 **Current Approach**
 * Extract candidate phrases: 
