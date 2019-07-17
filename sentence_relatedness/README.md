@@ -6,6 +6,6 @@
 * Calculate cosine similarity between noun-phrases of sentences
 * Final score is the maximum of all pair-wise scores
 
-Walkthrough notebook: `playground.ipynb`
+Walkthrough notebook: `playground.ipynb`<br>
 Sample run: `similarity.py`
 
