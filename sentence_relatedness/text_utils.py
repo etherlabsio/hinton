@@ -5,6 +5,9 @@ from bert_utils import *
 from byte_pair_tokenizer import tokenize
 import string,itertools
 from scipy import spatial
+from nltk.corpus import stopwords
+stop_words = set(stopwords.words('english'))
+from itertools import chain
 
 contractions = json.load(open('contractions.txt','rb'))
 contractions = contractions['contractions']
@@ -37,29 +40,32 @@ def getregexChunks(text, grammar):
                                                     for tagged_sent in tagged_sents))
     return [(ele[0], ele[1], ele[2], ctr) for ele,ctr in zip(all_chunks,range(len(all_chunks)))]
 
-def getCandidatePhrases(text, pos_search_pattern_list=[r"""base: {(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}"""]):
-                                       #r"""nounverb:{<NN.+>+<.+>{0,2}<VB*>{1}}""",
-                                       #r"""verbnoun:{<VB*>{1}<.+>{0,2}<NN.+>+}"""]):
-                                       #r""" nounnoun:{<NN.+>+<.+>{1,2}<NN.+>+}"""]):
-                                       #r"""baseverb: {(<JJ.+>+<IN>)?<JJ>*<VB.*>+}"""]):
+def getCandidatePhrases(text, pos_search_pattern_list=[r"""base: {(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}""",
+                                           r"""nounverb:{<NN.*>+<VB.*>+}""",
+                                           r"""verbnoun:{<VB.*>+<NN.*>+}"""]):
+    text = stripText(text)
     punct = set(string.punctuation)
     all_chunks = []
 
     for pattern in pos_search_pattern_list:
         all_chunks+=getregexChunks(text, pattern)
     
-    candidate_locs = [' '.join(str(ctr) for word, pos, 
-                           chunk,ctr in group).lower() 
-                  for key, group in itertools.groupby(all_chunks, 
-                  lambda_unpack(lambda word, pos, chunk, ctr: chunk != 'O')) if key]
-    
     candidate_phrases = [' '.join(word for word, pos, 
                            chunk,ctr in group).lower() 
                   for key, group in itertools.groupby(all_chunks, 
                   lambda_unpack(lambda word, pos, chunk, ctr: chunk != 'O')) if key]
     
-    #candidate_phrases = [cand for cand in candidates_tokens if cand not in stop_words and not all(char in punct for char in cand)]
+    filtered_candidates = []
 
+    for key_phrase in candidate_phrases:
+        curr_filtr_phrase = stripStopWordsFromText(key_phrase,stop_words)
+        if len(curr_filtr_phrase)>0:
+            filtered_candidates.append(curr_filtr_phrase)
+        
+    #remove the key-phrases starting with stop_words assuming that the stop_word is a verb and 
+    #the noun would be covered in the next pattern
+    candidate_phrases = filterCandidatePhrases(text,filtered_candidates)
+    candidate_phrases,candidate_locs = getPhraseListLocations(text, candidate_phrases)
     return candidate_phrases,candidate_locs
 
 def lambda_unpack(f):
@@ -150,8 +156,12 @@ def getKPBasedSimilarity(model, text1, text2, bert_layer = -1):
                 curr_sim = 0.1
             else:
                 curr_sim = 1-spatial.distance.cosine(feats1,feats2)
+            if len(sent1_kp.split(' '))==1 and len(sent2_kp.split(' '))==1:
+                #penalize by 5 points?
+                curr_sim = curr_sim-0.05
             if curr_sim>curr_max:
-                curr_max = curr_sim    
+                curr_max = curr_sim
+
     return curr_max
 
 def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
@@ -181,6 +191,9 @@ def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
                 curr_sim = 0.1
             else:
                 curr_sim = 1-spatial.distance.cosine(feats1,feats2)
+            if len(sent1_kp.split(' '))==1 and len(sent2_kp.split(' '))==1:
+                #penalize by 5 points?
+                curr_sim = curr_sim-0.05
             if curr_sim>curr_max:
                 curr_max = curr_sim
 
@@ -192,3 +205,148 @@ def getCosineSimilarity(text1, text2,  bert_layer = -1):
     token_feats_2,final_feats2,text2_bert_tokenized = getBERTFeatures(model, text2, attn_head_idx=layer)
 
     return 1-spatial.distance.cosine(final_feats1,final_feats2)
+
+## Added on: 17-Jul-2019
+
+def removeStopwords(text):
+    sent = ' '.join([tok for tok in text.split(' ') if tok not in stop_words])
+    return sent
+
+def getStartEndPOSList(text,candidate_phrases_list):
+    start_pos_list = []
+    end_pos_list = []
+    processed_list = []
+    for candidate in candidate_phrases_list:
+        start_pos = [match.start() for match in re.finditer(candidate, text)]
+        if len(start_pos)==1:
+            processed_list.append(candidate)
+            start_pos_list.append(start_pos[0])
+            end_pos_list.append(start_pos[0]+len(candidate))
+        else:
+            tok_ctr = processed_list.count(candidate)
+            start_pos_list.append(start_pos[tok_ctr])
+            end_pos_list.append(start_pos[tok_ctr]+len(candidate))
+            processed_list.append(candidate)
+    return start_pos_list, end_pos_list
+
+def filterCandidatePhrases(text, candidate_phrases_list):
+    drop_list = []
+    merge_list = []
+    merge_list_start = []
+    merge_list_end = []
+
+    filtered_sent = removeStopwords(text)
+    filtered_phrase_list = [removeStopwords(phrase) for phrase in candidate_phrases_list]
+
+    start_pos_list, end_pos_list = getStartEndPOSList(text,candidate_phrases_list)
+    filtered_start_pos_list, filtered_end_pos_list = getStartEndPOSList(filtered_sent,filtered_phrase_list)
+    assert len(filtered_start_pos_list)==len(filtered_phrase_list)
+
+    for i in range(len(start_pos_list)):
+        curr_start,curr_end,ctr = start_pos_list[i],end_pos_list[i],i
+
+        for j in range(i+1, len(start_pos_list)):
+            lookup_start, lookup_end, lookup_ctr = start_pos_list[j], end_pos_list[j], j
+            if curr_start==lookup_start and curr_end==lookup_end:
+                continue
+            if (curr_start<=lookup_start and curr_end>=lookup_end) or (lookup_start<=curr_start and lookup_end>=curr_end):
+                if len(candidate_phrases_list[i])<len(candidate_phrases_list[j]):
+                    drop_list.append(candidate_phrases_list[i])
+                else:
+                    drop_list.append(candidate_phrases_list[j])
+
+        for k in range(len(start_pos_list)):
+            if filtered_start_pos_list[i]-filtered_end_pos_list[k]==1:
+                merge_list.append([candidate_phrases_list[i],candidate_phrases_list[k]])
+                drop_list.append(candidate_phrases_list[i])
+                drop_list.append(candidate_phrases_list[k])
+                merge_list_start.append(min(start_pos_list[i],start_pos_list[k]))
+                merge_list_end.append(max(end_pos_list[i],end_pos_list[k]))
+
+    for ctr in range(len(merge_list)):
+        candidate_phrases_list.append(text[merge_list_start[ctr]:merge_list_end[ctr]])
+        
+    #do not do set operation
+    for ele in drop_list:
+        if ele in candidate_phrases_list:
+            candidate_phrases_list.remove(ele)
+    return candidate_phrases_list
+
+def stripStopWordsFromText(sent, stop_words):
+    fw_ctr = 0
+    bw_ctr = 0
+    for tok in sent.split(' '):
+        if tok in stop_words:
+            fw_ctr+=1
+        else:
+            break
+    for tok in reversed(sent.split(' ')):
+        if tok in stop_words:
+            bw_ctr-=1
+        else:
+            break
+    if bw_ctr!=0:
+        stripped_kp = ' '.join(sent.split(' ')[fw_ctr:bw_ctr])
+    else:
+        stripped_kp = ' '.join(sent.split(' ')[fw_ctr:])
+            
+    return stripped_kp.strip()
+
+def find_sub_list(sl,l):
+    results=[]
+    sll=len(sl)
+    for ind in (i for i,e in enumerate(l) if e==sl[0]):
+        if l[ind:ind+sll]==sl:
+            results.append((ind,ind+sll-1))        
+    range_list = [list(range(ele[0],ele[1]+1)) for ele in results]
+    
+    return range_list
+
+def getPhraseListLocations(text, candidate_phrases):
+    #assuming that the 
+    phrase_idx_list = []
+    token_sent_list = [nltk.word_tokenize(sent) for sent in nltk.sent_tokenize(text)]
+    token_list = list(chain(*token_sent_list))
+    
+    for phrase in candidate_phrases:
+        phrase_tokens = nltk.word_tokenize(phrase)
+        phrase_idx = find_sub_list(phrase_tokens,token_list)
+        phrase_idx_list.append(phrase_idx)
+     
+    processed_phrase_list = []
+    processed_idx_list = []
+    for phrase, loc_idx in zip(candidate_phrases,phrase_idx_list):
+        if len(loc_idx)==1:
+            processed_phrase_list.append(phrase)
+            processed_idx_list.append(loc_idx[0])
+        else:
+            #count number of times the phrase has occurred in the list
+            if phrase not in processed_phrase_list:
+                kp_occ_ctr = candidate_phrases.count(phrase)
+                if kp_occ_ctr == len(loc_idx):
+                    #append current key-phrase `kp_occ_ctr` times into the lists
+                    processed_phrase_list+=[phrase]*kp_occ_ctr
+                    processed_idx_list+=loc_idx
+                else: 
+                    idx_drop_list = []
+                    #the phrase index is calculated as part of another key-phrase index
+                    #check other sublists that are 
+                    #find other locations 
+                    for lookup_loc in phrase_idx_list:
+                        if lookup_loc!=loc_idx and len(lookup_loc[0])!=len(loc_idx[0]):
+                            for i in range(len(curr)):
+                                if((set(loc_idx[i]) & set(lookup_loc[0]))== set(loc_idx[i])):
+                                    idx_drop_list.append(loc_idx[i])
+                    for to_insert_loc in loc_idx:
+                        if to_insert_loc not in idx_drop_list:
+                            processed_phrase_list.append(phrase)
+                            processed_idx_list.append(to_insert_loc)
+                            
+    str_loc_list = []
+    for ele in processed_idx_list:
+        str_loc = ''
+        for tok in ele:
+            str_loc = str_loc+' '+str(tok)
+        str_loc_list.append(str_loc.strip())
+            
+    return processed_phrase_list,str_loc_list
