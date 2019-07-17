@@ -1,7 +1,6 @@
-<h2>Calculating Sentence relatedness bwtewwn two sentences </h2><br>
-Calculates cosine similarity between nown phrases in the sentences <br>
+#Calculating Sentence relatedness
 
-<h4>Currnet Approach</h4>
+**Current Approach**
 * Extract candidate noun-phrases - `{(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}`
 * Generate noun-phrase embedding - sum of corresponding BERT token features
 * Calculate cosine similarity between noun-phrases of sentences
@@ -9,3 +8,4 @@ Calculates cosine similarity between nown phrases in the sentences <br>
 
 Walkthrough notebook: `playground.ipynb`
 Sample run: `similarity.py`
+
