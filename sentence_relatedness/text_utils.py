@@ -132,7 +132,10 @@ def getWordFeatsFromBertTokenFeats(sent_tokens,bert_tokens,bert_token_feats):
     return word_feat_list
 
 def getKPBasedSimilarity(model, text1, text2, bert_layer = -1):
-    
+
+    text1 = stripText(text1)
+    text2 = stripText(text2)
+
     token_feats_1,final_feats1,text1_bert_tokenized = getBERTFeatures(model, text1, attn_head_idx=bert_layer)
     token_feats_2,final_feats2,text2_bert_tokenized = getBERTFeatures(model, text2, attn_head_idx=bert_layer)
 
@@ -167,6 +170,9 @@ def getKPBasedSimilarity(model, text1, text2, bert_layer = -1):
 def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
 
     #tup1, tup2 - output from getBERTFeatures() as a tuples
+
+    text1 = stripText(text1)
+    text2 = stripText(text2)
     
     token_feats_1,final_feats1,text1_bert_tokenized = tup1
     token_feats_2,final_feats2,text2_bert_tokenized = tup2
