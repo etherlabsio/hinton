@@ -197,7 +197,7 @@ def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
                 curr_sim = 0.1
             else:
                 curr_sim = 1-spatial.distance.cosine(feats1,feats2)
-            if len(sent1_kp.split(' '))==1 and len(sent2_kp.split(' '))==1:
+            if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
                 #penalize by 5 points?
                 curr_sim = curr_sim-0.05
             if curr_sim>curr_max:
