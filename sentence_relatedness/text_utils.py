@@ -154,14 +154,17 @@ def getKPBasedSimilarity(text1,text2,model,layer = -1):
     curr_max = 0
     for sent1_kp, feats1 in zip(kps_sent1,sent1_kp_feats):
         for sent2_kp, feats2 in zip(kps_sent2,sent2_kp_feats):
-            if len(sent1_kp)<3 or len(sent2_kp)<3:
-                curr_sim = 0.1
-            else:
+            if len(sent1_kp.split(' '))+len(sent2_kp.split(' '))==2:
+                #both are tokens, compare them
+                if len(sent1_kp.split(' ')[0])<4 or len(sent2_kp.split(' ')[0])<4:
+                    continue
                 curr_sim = 1-spatial.distance.cosine(feats1,feats2)
-            if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
-                #penalize by 5 points?
-                curr_sim = curr_sim-0.05
-            #print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
+            else:
+                if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
+                    continue
+                    #token-key-phrase comparision, ignore
+                else:
+                    curr_sim = 1-spatial.distance.cosine(feats1,feats2)
             if curr_sim>curr_max:
                 curr_max = curr_sim
 
@@ -193,13 +196,18 @@ def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
     curr_max = 0
     for sent1_kp, feats1 in zip(kps_sent1,sent1_kp_feats):
         for sent2_kp, feats2 in zip(kps_sent2,sent2_kp_feats):
-            if len(sent1_kp)<3 or len(sent2_kp)<3:
-                curr_sim = 0.1
-            else:
+            if len(sent1_kp.split(' '))+len(sent2_kp.split(' '))==2:
+                #both are tokens, compare them
+                if len(sent1_kp.split(' ')[0])<4 or len(sent2_kp.split(' ')[0])<4:
+                    continue
                 curr_sim = 1-spatial.distance.cosine(feats1,feats2)
-            if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
-                #penalize by 5 points?
-                curr_sim = curr_sim-0.05
+            else:
+                if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
+                    continue
+                    #token-key-phrase comparision, ignore
+                else:
+                    curr_sim = 1-spatial.distance.cosine(feats1,feats2)
+
             if curr_sim>curr_max:
                 curr_max = curr_sim
 
