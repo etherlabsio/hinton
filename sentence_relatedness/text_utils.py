@@ -43,29 +43,28 @@ def getregexChunks(text, grammar):
 def getCandidatePhrases(text, pos_search_pattern_list=[r"""base: {(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}""",
                                            r"""nounverb:{<NN.*>+<VB.*>+}""",
                                            r"""verbnoun:{<VB.*>+<NN.*>+}"""]):
+                                       #r""" nounnoun:{<NN.+>+<.+>{1,2}<NN.+>+}"""]):
+                                       #r"""baseverb: {(<JJ.+>+<IN>)?<JJ>*<VB.*>+}"""]):
     text = stripText(text)
     punct = set(string.punctuation)
     all_chunks = []
 
+    candidate_phrases = []
     for pattern in pos_search_pattern_list:
-        all_chunks+=getregexChunks(text, pattern)
-    
-    candidate_phrases = [' '.join(word for word, pos, 
+        curr_chunks=getregexChunks(text, pattern)
+        candidate_phrases+=[' '.join(word for word, pos, 
                            chunk,ctr in group).lower() 
-                  for key, group in itertools.groupby(all_chunks, 
+                  for key, group in itertools.groupby(curr_chunks, 
                   lambda_unpack(lambda word, pos, chunk, ctr: chunk != 'O')) if key]
     
     filtered_candidates = []
-
     for key_phrase in candidate_phrases:
         curr_filtr_phrase = stripStopWordsFromText(key_phrase,stop_words)
         if len(curr_filtr_phrase)>0:
             filtered_candidates.append(curr_filtr_phrase)
-        
-    #remove the key-phrases starting with stop_words assuming that the stop_word is a verb and 
-    #the noun would be covered in the next pattern
     candidate_phrases = filterCandidatePhrases(text,filtered_candidates)
     candidate_phrases,candidate_locs = getPhraseListLocations(text, candidate_phrases)
+
     return candidate_phrases,candidate_locs
 
 def lambda_unpack(f):
@@ -131,13 +130,13 @@ def getWordFeatsFromBertTokenFeats(sent_tokens,bert_tokens,bert_token_feats):
     assert len(sent_tokens)==len(word_feat_list)
     return word_feat_list
 
-def getKPBasedSimilarity(model, text1, text2, bert_layer = -1):
+def getKPBasedSimilarity(text1,text2,model,layer = -1):
 
     text1 = stripText(text1)
     text2 = stripText(text2)
 
-    token_feats_1,final_feats1,text1_bert_tokenized = getBERTFeatures(model, text1, attn_head_idx=bert_layer)
-    token_feats_2,final_feats2,text2_bert_tokenized = getBERTFeatures(model, text2, attn_head_idx=bert_layer)
+    token_feats_1,final_feats1,text1_bert_tokenized = getBERTFeatures(model, text1, attn_head_idx=layer)
+    token_feats_2,final_feats2,text2_bert_tokenized = getBERTFeatures(model, text2, attn_head_idx=layer)
 
     text1_sent_tokens = tokenize(text1)
     text2_sent_tokens = tokenize(text2)
@@ -159,9 +158,10 @@ def getKPBasedSimilarity(model, text1, text2, bert_layer = -1):
                 curr_sim = 0.1
             else:
                 curr_sim = 1-spatial.distance.cosine(feats1,feats2)
-            if len(sent1_kp.split(' '))==1 and len(sent2_kp.split(' '))==1:
+            if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
                 #penalize by 5 points?
                 curr_sim = curr_sim-0.05
+            #print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
             if curr_sim>curr_max:
                 curr_max = curr_sim
 
@@ -205,7 +205,7 @@ def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
 
     return curr_max
 
-def getCosineSimilarity(text1, text2,  bert_layer = -1):
+def getCosineSimilarity(text1,text2,model,layer = -1):
 
     token_feats_1,final_feats1,text1_bert_tokenized = getBERTFeatures(model, text1, attn_head_idx=layer)
     token_feats_2,final_feats2,text2_bert_tokenized = getBERTFeatures(model, text2, attn_head_idx=layer)
@@ -272,10 +272,20 @@ def filterCandidatePhrases(text, candidate_phrases_list):
     for ctr in range(len(merge_list)):
         candidate_phrases_list.append(text[merge_list_start[ctr]:merge_list_end[ctr]])
         
-    #do not do set operation
+    doup_list = []   
+    for kp1 in candidate_phrases_list:
+        for kp2 in candidate_phrases_list:
+            if kp1!=kp2 and kp2 in kp1:
+                doup_list.append(kp2)
+    #do not do set operation            
     for ele in drop_list:
         if ele in candidate_phrases_list:
             candidate_phrases_list.remove(ele)
+            
+    for ele in doup_list:
+        if ele in candidate_phrases_list:
+            candidate_phrases_list.remove(ele)
+
     return candidate_phrases_list
 
 def stripStopWordsFromText(sent, stop_words):
