@@ -151,24 +151,29 @@ def getKPBasedSimilarity(text1,text2,model,layer = -1):
     sent1_kp_feats = getKeyPhraseFeatures(kps_sent1,kps_loc_sent1,merged_feats_text1,text1_sent_tokens)
     sent2_kp_feats = getKeyPhraseFeatures(kps_sent2,kps_loc_sent2,merged_feats_text2,text2_sent_tokens)
 
-    curr_max = 0
+    sim_list = []
     for sent1_kp, feats1 in zip(kps_sent1,sent1_kp_feats):
         for sent2_kp, feats2 in zip(kps_sent2,sent2_kp_feats):
             if len(sent1_kp.split(' '))+len(sent2_kp.split(' '))==2:
-                #both are tokens, compare them
                 if len(sent1_kp.split(' ')[0])<4 or len(sent2_kp.split(' ')[0])<4:
                     continue
                 curr_sim = 1-spatial.distance.cosine(feats1,feats2)
+                print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
             else:
                 if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
+                    print('Skipping: ',sent1_kp,sent2_kp )
                     continue
-                    #token-key-phrase comparision, ignore
                 else:
                     curr_sim = 1-spatial.distance.cosine(feats1,feats2)
-            if curr_sim>curr_max:
-                curr_max = curr_sim
+                    print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
+            sim_list.append(curr_sim)
 
-    return curr_max
+    if len(sim_list)>3:
+        sim_list = sim_list[0:3]
+        
+    mean_dist = np.mean(sim_list)
+        
+    return mean_dist
 
 def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
 
@@ -193,25 +198,29 @@ def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
     sent1_kp_feats = getKeyPhraseFeatures(kps_sent1,kps_loc_sent1,merged_feats_text1,text1_sent_tokens)
     sent2_kp_feats = getKeyPhraseFeatures(kps_sent2,kps_loc_sent2,merged_feats_text2,text2_sent_tokens)
 
-    curr_max = 0
+    sim_list = []
     for sent1_kp, feats1 in zip(kps_sent1,sent1_kp_feats):
         for sent2_kp, feats2 in zip(kps_sent2,sent2_kp_feats):
             if len(sent1_kp.split(' '))+len(sent2_kp.split(' '))==2:
-                #both are tokens, compare them
                 if len(sent1_kp.split(' ')[0])<4 or len(sent2_kp.split(' ')[0])<4:
                     continue
                 curr_sim = 1-spatial.distance.cosine(feats1,feats2)
+                print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
             else:
                 if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
+                    print('Skipping: ',sent1_kp,sent2_kp )
                     continue
-                    #token-key-phrase comparision, ignore
                 else:
                     curr_sim = 1-spatial.distance.cosine(feats1,feats2)
+                    print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
+            sim_list.append(curr_sim)
 
-            if curr_sim>curr_max:
-                curr_max = curr_sim
-
-    return curr_max
+    if len(sim_list)>3:
+        sim_list = sim_list[0:3]
+        
+    mean_dist = np.mean(sim_list)
+        
+    return mean_dist
 
 def getCosineSimilarity(text1,text2,model,layer = -1):
 
