@@ -170,8 +170,12 @@ def getKPBasedSimilarity(text1,text2,model,layer = -1):
 
     if len(sim_list)>3:
         sim_list = sim_list[0:3]
+    print(sim_list)
+    if len(sim_list)>0:
+        mean_dist = np.mean(sim_list)
+    else:
+        mean_dist = 0.0
         
-    mean_dist = np.mean(sim_list)
         
     return mean_dist
 
@@ -217,8 +221,11 @@ def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
 
     if len(sim_list)>3:
         sim_list = sim_list[0:3]
-        
-    mean_dist = np.mean(sim_list)
+    
+    if len(sim_list)>0:
+        mean_dist = np.mean(sim_list)
+    else:
+        mean_dist = 0.0
         
     return mean_dist
 
