@@ -130,64 +130,20 @@ def getWordFeatsFromBertTokenFeats(sent_tokens,bert_tokens,bert_token_feats):
     assert len(sent_tokens)==len(word_feat_list)
     return word_feat_list
 
-def getKPBasedSimilarity(text1,text2,model,layer = -1):
+def getKPBasedSimilarity(text1,text2,model=None,tup1=None,tup2=None,layer = -1):
 
     text1 = stripText(text1)
     text2 = stripText(text2)
 
-    token_feats_1,final_feats1,text1_bert_tokenized = getBERTFeatures(model, text1, attn_head_idx=layer)
-    token_feats_2,final_feats2,text2_bert_tokenized = getBERTFeatures(model, text2, attn_head_idx=layer)
-
-    text1_sent_tokens = tokenize(text1)
-    text2_sent_tokens = tokenize(text2)
-
-    merged_feats_text1 = getWordFeatsFromBertTokenFeats(text1_sent_tokens,text1_bert_tokenized,token_feats_1)
-    merged_feats_text2 = getWordFeatsFromBertTokenFeats(text2_sent_tokens,text2_bert_tokenized,token_feats_2)
-
-    #get candidate key-phrases for both sentences
-    kps_sent1,kps_loc_sent1 = getCandidatePhrases(text1)
-    kps_sent2,kps_loc_sent2 = getCandidatePhrases(text2)
-    
-    sent1_kp_feats = getKeyPhraseFeatures(kps_sent1,kps_loc_sent1,merged_feats_text1,text1_sent_tokens)
-    sent2_kp_feats = getKeyPhraseFeatures(kps_sent2,kps_loc_sent2,merged_feats_text2,text2_sent_tokens)
-
-    sim_list = []
-    for sent1_kp, feats1 in zip(kps_sent1,sent1_kp_feats):
-        for sent2_kp, feats2 in zip(kps_sent2,sent2_kp_feats):
-            if len(sent1_kp.split(' '))+len(sent2_kp.split(' '))==2:
-                if len(sent1_kp.split(' ')[0])<4 or len(sent2_kp.split(' ')[0])<4:
-                    continue
-                curr_sim = 1-spatial.distance.cosine(feats1,feats2)
-                print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
-            else:
-                if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
-                    print('Skipping: ',sent1_kp,sent2_kp )
-                    continue
-                else:
-                    curr_sim = 1-spatial.distance.cosine(feats1,feats2)
-                    print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
-            sim_list.append(curr_sim)
-
-    if len(sim_list)>3:
-        sim_list = sim_list[0:3]
-    print(sim_list)
-    if len(sim_list)>0:
-        mean_dist = np.mean(sim_list)
+    if (tup1 is not None) and (tup2 is not None):
+        token_feats_1,final_feats1,text1_bert_tokenized = tup1
+        token_feats_2,final_feats2,text2_bert_tokenized = tup2
     else:
-        mean_dist = 0.0
-        
-        
-    return mean_dist
-
-def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
-
-    #tup1, tup2 - output from getBERTFeatures() as a tuples
-
-    text1 = stripText(text1)
-    text2 = stripText(text2)
-    
-    token_feats_1,final_feats1,text1_bert_tokenized = tup1
-    token_feats_2,final_feats2,text2_bert_tokenized = tup2
+        if model is not None:
+            token_feats_1,final_feats1,text1_bert_tokenized = getBERTFeatures(model, text1, attn_head_idx=layer)
+            token_feats_2,final_feats2,text2_bert_tokenized = getBERTFeatures(model, text2, attn_head_idx=layer)
+        else:
+            assert model is not None
 
     text1_sent_tokens = tokenize(text1)
     text2_sent_tokens = tokenize(text2)
@@ -198,7 +154,7 @@ def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
     #get candidate key-phrases for both sentences
     kps_sent1,kps_loc_sent1 = getCandidatePhrases(text1)
     kps_sent2,kps_loc_sent2 = getCandidatePhrases(text2)
-
+    
     sent1_kp_feats = getKeyPhraseFeatures(kps_sent1,kps_loc_sent1,merged_feats_text1,text1_sent_tokens)
     sent2_kp_feats = getKeyPhraseFeatures(kps_sent2,kps_loc_sent2,merged_feats_text2,text2_sent_tokens)
 
@@ -209,19 +165,15 @@ def getKPBasedSimilarityFromBERTFeats(tup1,tup2, text1, text2, bert_layer = -1):
                 if len(sent1_kp.split(' ')[0])<4 or len(sent2_kp.split(' ')[0])<4:
                     continue
                 curr_sim = 1-spatial.distance.cosine(feats1,feats2)
-                print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
             else:
                 if len(sent1_kp.split(' '))==1 or len(sent2_kp.split(' '))==1:
-                    print('Skipping: ',sent1_kp,sent2_kp )
                     continue
                 else:
                     curr_sim = 1-spatial.distance.cosine(feats1,feats2)
-                    print(sent1_kp,'<>',sent2_kp,': ',curr_sim)
             sim_list.append(curr_sim)
 
     if len(sim_list)>3:
         sim_list = sim_list[0:3]
-    
     if len(sim_list)>0:
         mean_dist = np.mean(sim_list)
     else:
