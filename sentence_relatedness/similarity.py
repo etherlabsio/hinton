@@ -1,13 +1,9 @@
 from model_loader import ModelLoader
 from text_utils import *
 
-config_path = '/Users/venkat/Documents/mlflow/mlflow_bert/bert_mlflow_pyfunc/artifacts/bert_config.json'
-mind_path = '/Users/venkat/Documents/mlflow/mlflow_bert/bert_mlflow_pyfunc/artifacts/mind.pkl'
-model_path = '/Users/venkat/Documents/mlflow/mlflow_bert_deploy/mind-01dadp74wfv607knpcb6vvxgtg/artifacts/model.bin'
-
-# config_path = 'artifacts/bert_config.json'
-# mind_path = 'artifacts/mind.pkl'
-# model_path = 'artifacts/model.bin'
+config_path = 'artifacts/bert_config.json'
+mind_path = 'artifacts/mind.pkl'
+model_path = 'artifacts/model.bin'
 
 model_loader = ModelLoader(config_path, mind_path, model_path)
 model = model_loader.loadModel()

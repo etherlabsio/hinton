@@ -43,9 +43,7 @@ def getregexChunks(text, grammar):
 def getCandidatePhrases(text, pos_search_pattern_list=[r"""base: {(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}""",
                                            r"""nounverb:{<NN.*>+<VB.*>+}""",
                                            r"""verbnoun:{<VB.*>+<NN.*>+}"""]):
-                                       #r""" nounnoun:{<NN.+>+<.+>{1,2}<NN.+>+}"""]):
-                                       #r"""baseverb: {(<JJ.+>+<IN>)?<JJ>*<VB.*>+}"""]):
-    text = stripText(text)
+
     punct = set(string.punctuation)
     all_chunks = []
 
@@ -132,6 +130,22 @@ def getWordFeatsFromBertTokenFeats(sent_tokens,bert_tokens,bert_token_feats):
 
 def getKPBasedSimilarity(text1,text2,model=None,tup1=None,tup2=None,layer = -1):
 
+    """
+    Calculates similarity between two sentences - based on noun phrases, verb<>noun phrases. Calculates pair-wise cosine similarity between candidate phrases
+    returns mean of top-3 similar phrases as similarity
+
+    Args:
+    text1: required 
+    text2: required
+    model optional, required if tup1 and tup2 are provided
+    tup1: bert features of `sent1` as returned by getBERTFeatures()
+    tup2: bert features of `sent2` as returned by getBERTFeatures()
+    layer: optional, BERT layer to extract features from
+
+    Output:
+    returns key-phrase based cosine similarity between the sentences
+    """
+
     text1 = stripText(text1)
     text2 = stripText(text2)
 
@@ -183,6 +197,19 @@ def getKPBasedSimilarity(text1,text2,model=None,tup1=None,tup2=None,layer = -1):
 
 def getCosineSimilarity(text1,text2,model,layer = -1):
 
+    """
+    Calculates cosine similarity between pooled last token BERT features
+
+    Args:
+    text1: required 
+    text2: required
+    model optional, required if tup1 and tup2 are provided
+    layer: optional, BERT layer to extract features from
+
+    Output:
+    returns cosine similarity between pooled bert features of the sentences
+    """
+
     token_feats_1,final_feats1,text1_bert_tokenized = getBERTFeatures(model, text1, attn_head_idx=layer)
     token_feats_2,final_feats2,text2_bert_tokenized = getBERTFeatures(model, text2, attn_head_idx=layer)
 
@@ -212,6 +239,11 @@ def getStartEndPOSList(text,candidate_phrases_list):
     return start_pos_list, end_pos_list
 
 def filterCandidatePhrases(text, candidate_phrases_list):
+    """
+    * Merges sub phrases into single phrase
+    * Concatenate adjecent phrases
+    * Retains duplicate phrases occurring at different positions
+    """
     drop_list = []
     merge_list = []
     merge_list_start = []
@@ -265,6 +297,9 @@ def filterCandidatePhrases(text, candidate_phrases_list):
     return candidate_phrases_list
 
 def stripStopWordsFromText(sent, stop_words):
+    """
+    Removes stop-words at the start and end of the inputs
+    """
     fw_ctr = 0
     bw_ctr = 0
     for tok in sent.split(' '):
@@ -295,7 +330,9 @@ def find_sub_list(sl,l):
     return range_list
 
 def getPhraseListLocations(text, candidate_phrases):
-    #assuming that the 
+    """
+    locates the word indices of the key-phrase in the input text
+    """
     phrase_idx_list = []
     token_sent_list = [nltk.word_tokenize(sent) for sent in nltk.sent_tokenize(text)]
     token_list = list(chain(*token_sent_list))
