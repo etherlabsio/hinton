@@ -2,10 +2,9 @@ from model_loader import ModelLoader
 from text_utils import *
 
 config_path = 'artifacts/bert_config.json'
-mind_path = 'artifacts/mind.pkl'
 model_path = 'artifacts/model.bin'
 
-model_loader = ModelLoader(config_path, mind_path, model_path)
+model_loader = ModelLoader(config_path, model_path)
 model = model_loader.loadModel()
 
 text1 = 'and with that in mind, i tried many approaches and frameworks for implementing the same pattern: single page applications (spa)'
