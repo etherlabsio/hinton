@@ -5,10 +5,9 @@ import pickle
 
 class ModelLoader(object):
 
-	def __init__(self, config_path, mind_path, model_path):
+	def __init__(self, config_path, model_path):
 
 		self.config = BertConfig.from_json_file(config_path)
-		self.mind_dict = pickle.load(open(mind_path,'rb'))
 		self.state_dict = torch.load(model_path,map_location='cpu')
 
 	def loadModel(self):
