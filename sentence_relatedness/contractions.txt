@@ -1,7 +1,7 @@
 {"contractions": {"ain't": "am not",
 "aren't": "are not",
-"can't": "cannot",
-"can't've": "cannot have",
+"can't": "can not",
+"can't've": "can not have",
 "'cause": "because",
 "could've": "could have",
 "couldn't": "could not",
@@ -74,4 +74,12 @@
 "I'll": "I will",
 "We'll": "We will",
 "Let's": "Let us",
-"I'd": "I would"}}
+"I'd": "I would",
+"cannot": "can not",
+"gotta": "going to",
+"wanna": "want to",
+"gonna": "going to",
+"gimme": "give me",
+"kinda": "kind of",
+"lemme": "let me",
+"whatcha": "what are you"}}

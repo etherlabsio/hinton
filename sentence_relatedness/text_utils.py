@@ -22,14 +22,18 @@ def replaceContractions(text):
             c_filt_text = c_filt_text+' '+word
     return c_filt_text.strip()
 
-def stripText(text):
+def customPreprocess(text):
+    text = text.replace('cannot', 'can not') #nltk, bert tokenizer disagreement :-(
+    text = text.replace('gotta', 'have got to') #nltk, bert tokenizer disagreement :-(
+    text = text.replace('gonna', 'going to') #nltk, bert tokenizer disagreement :-(
+    text = text.replace('wanna', 'want to') #nltk, bert tokenizer disagreement :-(
     text = replaceContractions(text.lower())
     text = re.sub('(\d+[A-z]+)|(([A-z]+\d+))',' ',text) #remove alphanumeric words
     text = re.sub('-',' ', text)
-    text = re.sub('\s+',' ', text)
     text = re.sub("'",' ', text)
+    text = re.sub('[^a-zA-Z0-9-_*.]',' ',text)
+    text = re.sub('\s+',' ', text)
     return text.strip()
-
 
 #Key-phrase candidates
 def getregexChunks(text, grammar):
@@ -43,7 +47,8 @@ def getregexChunks(text, grammar):
 def getCandidatePhrases(text, pos_search_pattern_list=[r"""base: {(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}""",
                                            r"""nounverb:{<NN.*>+<VB.*>+}""",
                                            r"""verbnoun:{<VB.*>+<NN.*>+}"""]):
-
+    
+    text = customPreprocess(text)
     punct = set(string.punctuation)
     all_chunks = []
 
@@ -58,6 +63,8 @@ def getCandidatePhrases(text, pos_search_pattern_list=[r"""base: {(<JJ.*>*<NN.*>
     filtered_candidates = []
     for key_phrase in candidate_phrases:
         curr_filtr_phrase = stripStopWordsFromText(key_phrase,stop_words)
+        if curr_filtr_phrase!=key_phrase and curr_filtr_phrase in candidate_phrases:
+            curr_filtr_phrase = '' #can be considered duplicate
         if len(curr_filtr_phrase)>0:
             filtered_candidates.append(curr_filtr_phrase)
     candidate_phrases = filterCandidatePhrases(text,filtered_candidates)
@@ -73,7 +80,10 @@ def getKeyPhraseFeatures(kp_list, kp_loc_idx,text_feats, text_tokens):
     key_phrase_feats = []
     for ele,loc_list in zip(kp_list,kp_loc_idx):
         if len(ele.split(' '))==1:
-            idx_val = int(loc_list[0])
+            if loc_list[0]== '-': #check getPhraseListLocations() for the reason
+                idx_val = int(loc_list)
+            else:
+                idx_val = int(loc_list[0])
             key_phrase_feats.append(getTokenFeature(ele,idx_val,text_feats,text_tokens))
         else:
             curr_feature_vec = []
@@ -96,6 +106,7 @@ def getTokenFeature(token, token_idx, text_feats, text_tokens):
     return feat_vec
 
 def getWordFeatsFromBertTokenFeats(sent_tokens,bert_tokens,bert_token_feats):
+    """
     #steps for merging the bert tokens to get the BERT features for actual words
     #1. iterate over the BERT base tokenizer
     #2. lookup for the actual word in the current BERT lookup postions
@@ -103,30 +114,41 @@ def getWordFeatsFromBertTokenFeats(sent_tokens,bert_tokens,bert_token_feats):
         #3a. the word is not tokenized further - use the current BERT features as word embedding
     #else:
         #3b. the word is tokenized in BERT - find the sequence of tokens and sum up the features to get the word vector
+    """
     base_ctr = 0
     bert_ctr = 0
     word_feat_list = []
 
     for word in sent_tokens:
         if bert_tokens[bert_ctr] == word:#word not further tokenized, use the same feature vector
-            word_feat_list.append(np.array(bert_token_feats[bert_ctr].detach().numpy()))
+            if type(bert_token_feats[bert_ctr]) == np.ndarray:
+                word_feat_list.append(np.array(bert_token_feats[bert_ctr]))
+            else:
+                word_feat_list.append(np.array(bert_token_feats[bert_ctr].detach().numpy()))
             base_ctr+=1
             bert_ctr+=1
         else:
-            aggr_feats = np.array(bert_token_feats[bert_ctr].detach().numpy())
+            if type(bert_token_feats[bert_ctr]) == np.ndarray:
+                aggr_feats = np.array(bert_token_feats[bert_ctr])
+            else:
+                aggr_feats = np.array(bert_token_feats[bert_ctr].detach().numpy())
             aggr_word = bert_tokens[bert_ctr]
             merge_next = True
             while merge_next and bert_ctr<len(bert_tokens)-1:
                 if '#' in bert_tokens[bert_ctr+1]:
                     aggr_word = aggr_word+bert_tokens[bert_ctr+1]
                     bert_ctr+=1
-                    aggr_feats+=np.array(bert_token_feats[bert_ctr].detach().numpy())
+                    if type(bert_token_feats[bert_ctr])==np.ndarray:
+                        aggr_feats+=np.array(bert_token_feats[bert_ctr])
+                    else:
+                        aggr_feats+=np.array(bert_token_feats[bert_ctr].detach().numpy())
                 else:
                     merge_next = False
                     bert_ctr+=1
             word_feat_list.append(aggr_feats)
     assert len(sent_tokens)==len(word_feat_list)
     return word_feat_list
+
 
 def getKPBasedSimilarity(text1,text2,model=None,tup1=None,tup2=None,layer = -1):
 
@@ -146,8 +168,8 @@ def getKPBasedSimilarity(text1,text2,model=None,tup1=None,tup2=None,layer = -1):
     returns key-phrase based cosine similarity between the sentences
     """
 
-    text1 = stripText(text1)
-    text2 = stripText(text2)
+    text1 = customPreprocess(text1)
+    text2 = customPreprocess(text2)
 
     if (tup1 is not None) and (tup2 is not None):
         token_feats_1,final_feats1,text1_bert_tokenized = tup1
@@ -231,7 +253,7 @@ def getStartEndPOSList(text,candidate_phrases_list):
             processed_list.append(candidate)
             start_pos_list.append(start_pos[0])
             end_pos_list.append(start_pos[0]+len(candidate))
-        else:
+        else: 
             tok_ctr = processed_list.count(candidate)
             start_pos_list.append(start_pos[tok_ctr])
             end_pos_list.append(start_pos[tok_ctr]+len(candidate))
@@ -345,6 +367,10 @@ def getPhraseListLocations(text, candidate_phrases):
     processed_phrase_list = []
     processed_idx_list = []
     for phrase, loc_idx in zip(candidate_phrases,phrase_idx_list):
+        if len(loc_idx)==0:
+            processed_phrase_list.append(phrase)
+            processed_idx_list.append(['-1']) #mismatch between nltk and bert tokenizers :-(
+
         if len(loc_idx)==1:
             processed_phrase_list.append(phrase)
             processed_idx_list.append(loc_idx[0])
@@ -363,7 +389,7 @@ def getPhraseListLocations(text, candidate_phrases):
                     #find other locations 
                     for lookup_loc in phrase_idx_list:
                         if lookup_loc!=loc_idx and len(lookup_loc[0])!=len(loc_idx[0]):
-                            for i in range(len(curr)):
+                            for i in range(len(loc_idx)):
                                 if((set(loc_idx[i]) & set(lookup_loc[0]))== set(loc_idx[i])):
                                     idx_drop_list.append(loc_idx[i])
                     for to_insert_loc in loc_idx:
