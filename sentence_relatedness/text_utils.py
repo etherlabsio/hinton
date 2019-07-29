@@ -23,10 +23,6 @@ def replaceContractions(text):
     return c_filt_text.strip()
 
 def customPreprocess(text):
-    text = text.replace('cannot', 'can not') #nltk, bert tokenizer disagreement :-(
-    text = text.replace('gotta', 'have got to') #nltk, bert tokenizer disagreement :-(
-    text = text.replace('gonna', 'going to') #nltk, bert tokenizer disagreement :-(
-    text = text.replace('wanna', 'want to') #nltk, bert tokenizer disagreement :-(
     text = replaceContractions(text.lower())
     text = re.sub('(\d+[A-z]+)|(([A-z]+\d+))',' ',text) #remove alphanumeric words
     text = re.sub('-',' ', text)
