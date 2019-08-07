@@ -11,3 +11,5 @@ There are a few possible solutions to this problem:
 Approach #2 helps to some extent but there is still a need to improve the separation between two in-domain paragraphs and between one in-domain and one out-of-domain paragraph.
 The gpt-paragraph-similarity-LSTM file details approach #3.
 Using Approach #4, the GPT LM model with an LSTM head is averse to addition of non-domain topics at the end of the in-domain paragraph but does not capture context as well as the GPT with Multi Choice Head model. This results in inconsistent cosine similarity scores.
+
+Conclusion: GPT paragraph embeddings show good topic separation and can be used for separating segments based on context. In order to not rely on aggregation of sentence features, a Bi-LSTM head was used to aggregate the features instead of summing up the sentence-level feature vectors. This resulted in better context-capture across a paragraph.
