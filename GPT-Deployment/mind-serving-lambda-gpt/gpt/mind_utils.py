@@ -65,13 +65,11 @@ def getGPTFeatures(model,text):
     encoded_data = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text))
 
     input_ids = [special_tokens_ids[0]] + encoded_data[:max_length] + [special_tokens_ids[2]]
-    mc_token_ids = len(input_ids)-1
 
     input_tensor = torch.tensor([[input_ids]])
-    mc_token_tensor = torch.tensor([[mc_token_ids]])
 
     with torch.no_grad():
-        lm_text_feature = model(input_tensor, mc_token_tensor)
+        lm_text_feature = model(input_tensor)
     lm_text_feature = getReshapedFeatures(lm_text_feature)
     return lm_text_feature
 
