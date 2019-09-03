@@ -81,7 +81,7 @@ def getGPTFeatures(model,text):
 
 
 def getSentenceFeatures(model, split_text):
-  #split text into sentences and return sentence feature vector list
+  # accepts list of texts, return sentence feature vector list
     sent_feat_list = []
     sent_list = []
 
