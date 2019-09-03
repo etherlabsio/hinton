@@ -20,7 +20,7 @@ def cosine(vec1, vec2):
     return dot(vec1, vec2)/(norm(vec1)*norm(vec2))
 
 
-def getScore(mind_input, lambda_function):
+def getScore(mind_input, lambda_function, mind_vector):
     invoke_response = lambda_client.invoke(FunctionName=lambda_function,
                                            InvocationType='RequestResponse',
                                            Payload=mind_input)
@@ -34,10 +34,12 @@ def getScore(mind_input, lambda_function):
     transcript_score_list = []
     if response == 200:
         logger.info('got {} from mind server'.format(response))
-        feature_vector, mind_vector = np.array(data['sent_feats'][0]), np.array(data['mind_feats'][0])
-
+        feature_vector = np.array(data['sent_feats'][0])
+        
         # Get distance metric
         if len(feature_vector) > 0:
+            # For paragraphs, uncomment below LOC
+            #feature_vector = np.mean(np.array(feature_vector),0).reshape(1,-1)
             for sent_vec in feature_vector:
                 sent_score_list = []
                 for mind_vec in mind_vector:
