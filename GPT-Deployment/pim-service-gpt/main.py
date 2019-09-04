@@ -8,7 +8,11 @@ import logging
 import json
 from scorer import getScore
 from pre_processors import preprocessSegments
+import numpy as np
+import pickle
+import boto3
 
+s3 = boto3.resource('s3')
 logger = logging.getLogger()
 
 def loadMindFeatures(mind_id):
