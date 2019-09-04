@@ -1,5 +1,5 @@
 from typing import List
-
+import pickle
 Vector = List[str]
 
 # BUCKET_NAME = io.etherlabs.artifacts
