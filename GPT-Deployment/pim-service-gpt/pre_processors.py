@@ -1,6 +1,11 @@
 from typing import List
 import pickle
 Vector = List[str]
+import os
+import boto3
+
+
+s3 = boto3.resource('s3')
 
 # BUCKET_NAME = io.etherlabs.artifacts
 bucket = os.getenv('BUCKET_NAME', 'io.etherlabs.gpt.artifacts')
