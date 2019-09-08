@@ -18,28 +18,27 @@ logger = logging.getLogger()
 def loadMindFeatures(mind_id):
     # BUCKET_NAME = io.etherlabs.artifacts
     bucket = os.getenv('BUCKET_NAME', 'io.etherlabs.artifacts')
-    # MINDS = staging2/minds/
-    mind_path = os.getenv('MINDS')+mind_id+"/mind.pkl"
+    # MINDS = staging2/minds/ 
+    mind_path = os.getenv('MINDS') + mind_id + "/mind.pkl"
     mind_dl_path = os.path.join(os.sep, 'tmp', 'mind.pkl')
     s3.Bucket(bucket).download_file(mind_path,mind_dl_path)
     mind_dict = pickle.load(open(mind_dl_path,'rb'))
 
-    feats = list(mind_dict['feature_vector'].values())
-    mind_feats_nparray = np.array(feats).reshape(len(feats),-1)
-    return mind_feats_nparray
+    return mind_dict
 
 
 def lambda_handler(event, context):
-    print("event['body']: ", event['body'])
+    # print("event['body']: ", event['body'])
     if isinstance(event['body'], str):
         json_request = json.loads(event['body'])
     else:
         json_request = event['body']
 
     mindId = str(json_request['mindId']).lower()
+    mind_dict = loadMindFeatures(mindId)
     mind_id = "mind-"+mindId
-    mind_feats = loadMindFeatures(mind_id)
-
+    
+    lambda_function = mind_id
     transcript_text = json_request['segments'][0]['originalText']
     pre_processed_input = preprocessSegments(transcript_text)
 
@@ -47,7 +46,7 @@ def lambda_handler(event, context):
         mind_input = json.dumps({"text": pre_processed_input})
         mind_input = json.dumps({"body": mind_input})
         logger.info('sending request to mind service')
-        transcript_score = getScore(mind_input, lambda_function,mind_feats)
+        transcript_score = getScore(mind_input, lambda_function, mind_dict)
     else:
         transcript_score = 0.00001
         logger.warn('processing transcript: {}'.format(transcript_text))
