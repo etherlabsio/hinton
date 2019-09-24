@@ -1,9 +1,8 @@
 from audio import preprocess_wav
-from audio_io import read_wav, read_wav_as_blocks, read_wav_from_bytes, convert_to_wav
+from audio_io import read_wav, read_wav_as_blocks, read_wav_from_bytes, convert_to_wav, similarity_to_timeframe
 from params import *
 from speech_encoder import VoiceEncoder
 from demo_utils import interactive_diarization
-import numpy as np
 
 
 class SpeakerDiarization(object):
@@ -58,7 +57,7 @@ class SpeakerDiarization(object):
         if visualization:
             interactive_diarization(similarity_dict, audio_data, wav_splits, show_time=True)
 
-        return similarity_dict
+        return similarity_dict, wav_splits
 
     def streaming_diarize(self, audio_file, reference_audio_file=None):
         wav_file = self.convert_wav(audio_file, convert=True)
@@ -71,7 +70,7 @@ class SpeakerDiarization(object):
             similarity_dict = {name: cont_embeds @ speaker_embed for name, speaker_embed in
                                zip(speaker_names, speaker_embeds)}
 
-            yield similarity_dict
+            yield similarity_dict, wav_splits
 
 
 if __name__ == "__main__":
@@ -79,5 +78,6 @@ if __name__ == "__main__":
     # Source for the interview: https://www.youtube.com/watch?v=X2zqiX6yL3I
     audio_file = "data/youtube_test.wav"
     sd = SpeakerDiarization()
-    similarity_dict = sd.simple_diarize(audio_file=audio_file, reference_audio_file=audio_file, visualization=True)
-    print(similarity_dict)
+    similarity_dict, wav_splits = sd.simple_diarize(audio_file=audio_file, reference_audio_file=audio_file, visualization=False)
+
+    similarity_to_timeframe(similarity_dict, wav_splits)

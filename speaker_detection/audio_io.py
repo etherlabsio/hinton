@@ -2,8 +2,16 @@ import soundfile as sf
 import librosa
 import io
 from pathlib import Path
+import json
+import numpy as np
 
 from params import *
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
 
 
 def read_wav(audio_file, source_sr=None):
@@ -63,3 +71,27 @@ def convert_to_wav(audio_file, output_file_name):
     sf.write(output_file_name, audio_file, samplerate=sampling_rate, subtype='PCM_24')
 
     return output_file_name
+
+def similarity_to_timeframe(similarity_dict, wav_splits, out_file_path="data/speaker_change.json"):
+
+    similarity_time_list = []
+
+    times = [((s.start + s.stop) / 2) / sampling_rate for s in wav_splits]
+
+    for l in range(len(wav_splits)):
+        similarities = [s[l] for s in similarity_dict.values()]
+        best = np.argmax(similarities)
+        name, similarity = list(similarity_dict.keys())[best], similarities[best]
+
+        similarity_time_dict = {
+            "indices": l,
+            "name": name,
+            "confidence": str(similarity),
+            "startedAt": str(times[l])
+        }
+
+        similarity_time_list.append(similarity_time_dict)
+
+
+    with open(out_file_path, 'w', encoding="utf-8") as f_:
+        json.dump(similarity_time_list, f_, ensure_ascii=False, indent=4, cls=NumpyEncoder)
