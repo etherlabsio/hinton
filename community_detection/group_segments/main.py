@@ -1,13 +1,15 @@
 import json
+import sys
+sys.path.append("../../../ai-engine/pkg")
 from transport import decode_json_request
 from grouper import get_groups
 from extra_preprocess import format_pims_output
 import sys
 import logging
-#from log.logger import setup_server_logger
+from log.logger import setup_server_logger
 
-#logger = logging.getLogger()
-#setup_server_logger(debug=True)
+logger = logging.getLogger()
+setup_server_logger(debug=True)
 
 
 def handler(event, context):
