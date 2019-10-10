@@ -392,7 +392,7 @@ class community_detection():
         return new_pim
 
     def h_communities(self):
-        fv, graph_list = self.compute_feature_vector_gpt()
+        fv, graph_list = self.compute_feature_vector()
         v = 0.15
         meeting_graph, yetto_prune = self.construct_graph(fv, graph_list)
         meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
