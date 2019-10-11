@@ -392,7 +392,7 @@ class community_detection():
         return new_pim
 
     def h_communities(self):
-        fv, graph_list = self.compute_feature_vector()
+        fv, graph_list = self.compute_feature_vector_gpt()
         v = 0.15
         meeting_graph, yetto_prune = self.construct_graph(fv, graph_list)
         meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
@@ -472,8 +472,8 @@ class community_detection():
 
     def get_communities(self):
         # segments_data = ' '.join([sentence for segment in self.segments_list for sentence in segment['originalText']])
-        fv, graph_list = self.compute_feature_vector()
-        # fv, graph_list = self.compute_feature_vector_gpt()
+        # fv, graph_list = self.compute_feature_vector()
+        fv, graph_list = self.compute_feature_vector_gpt()
         #fv, graph_list = self.compute_feature_vector_use()
         logger.info("No of sentences is", extra={"sentence": len(fv.keys())})
         meeting_graph, yetto_prune = self.construct_graph(fv, graph_list)
