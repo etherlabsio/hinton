@@ -24,9 +24,14 @@ def decode_json_request(req) -> Request:
 
     for keys in gs_result.keys():
         for seg in gs_result[keys]:
-            gs_rec_map[seg['recordingId']] = keys
+            if gs_rec_map.get(seg['recordingId']) is False:
+                if len(gs_result[keys]) > len(gs_result[gs_rec_map[seg['recordingId']]]):
+                    gs_rec_map[seg['recordingId']] = keys
+            else:
+                gs_rec_map[seg['recordingId']] = keys
 
     for seg in pim_result["segments"]:
         pim_rec_map[seg["recordingId"]] =  seg['distance']
 
+    print ("gs_mapping: ", gs_rec_map, "\n pim_mapping", pim_rec_map)
     return Request(pim_result, gs_result, gs_rec_map, pim_rec_map)

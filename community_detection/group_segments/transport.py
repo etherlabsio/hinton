@@ -14,7 +14,7 @@ class Request:
     segments: list
     segments_org: list
     segments_map: dict
-
+    segments_order: dict
 
 def decode_json_request(req) -> Request:
 
@@ -34,6 +34,12 @@ def decode_json_request(req) -> Request:
     segments_map = {}
     for segm in req['segments']:
         segments_map[segm['id']] = deepcopy(segm)
+    print("printing ele")
+    index = 0
+    segments_order = {}
+    for ele in sorted(segments_map.items(), key=lambda x: x[1]['startTime'], reverse=False):
+        segments_order[ele[0]] = index
+        index+=1
     segments_org = deepcopy(req)
     segments = decode_segments(segments_org)
-    return Request(segments, segments_org, segments_map)
+    return Request(segments, segments_org, segments_map, segments_order)

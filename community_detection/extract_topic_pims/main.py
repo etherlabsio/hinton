@@ -18,7 +18,6 @@ def handler(event, context):
     #logger.info("POST request recieved", extra={"request": json_request})
     Request_obj = decode_json_request(json_request)
     # lambda_function = "mind-" + mindId
-    print (Request_obj.gs_rec_map,"\n\n\n", Request_obj.pim_rec_map)
     output_pims = json.dumps({"statusCode":200, "headers": {"Content-Type": "application/json"}, "body": get_pims(Request_obj)})
     # output_pims = format_pims_output(pim, json_request, Request_obj.segments_map, mindId)
     # logger.warning("Unable to extract topic", extra={"exception": e})

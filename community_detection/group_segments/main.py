@@ -9,7 +9,7 @@ import logging
 from log.logger import setup_server_logger
 
 logger = logging.getLogger()
-setup_server_logger(debug=True)
+setup_server_logger(debug=False)
 
 
 def handler(event, context):
