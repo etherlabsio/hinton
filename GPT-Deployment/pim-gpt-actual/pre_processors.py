@@ -1,11 +1,16 @@
 from typing import List
 import pickle
 Vector = List[str]
+import os
+import boto3
+
+
+s3 = boto3.resource('s3')
 
 # BUCKET_NAME = io.etherlabs.artifacts
-bucket = os.getenv('BUCKET_NAME', 'io.etherlabs.gpt.artifacts')
+bucket = os.getenv('BUCKET_NAME', 'io.etherlabs.staging2.contexts')
 # TOKENIZER = staging2/tokenizer/english.pickle
-mind_path = os.getenv('TOKENIZER')
+tokenizer_path = os.getenv('TOKENIZER')
 tokenizer_dl_path = os.path.join(os.sep, 'tmp', 'english.pickle')
 s3.Bucket(bucket).download_file(tokenizer_path,tokenizer_dl_path)
 sent_tokenizer = pickle.load(open(tokenizer_dl_path,"rb"))

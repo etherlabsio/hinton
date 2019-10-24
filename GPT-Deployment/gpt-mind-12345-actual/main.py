@@ -8,10 +8,8 @@ import io
 import json
 import glob
 import time
-import logging
-
 import boto3
-import requests
+import logging
 
 import torch
 from gpt import OpenAIGPTPreTrainedModel,OpenAIGPTConfig,OpenAIGPTModel,SequenceSummary
@@ -25,7 +23,7 @@ logger.setLevel(logging.INFO)
 
 def load_model_files():
 
-    bucket = os.getenv('BUCKET_NAME', 'io.etherlabs.artifacts')
+    bucket = os.getenv('BUCKET_NAME', 'io.etherlabs.staging2.contexts')
     model_path = os.getenv('MODEL')
     # CONFIG = staging2/minds/[mindid]/gpt_config.json
     config_path = os.getenv('CONFIG')
@@ -55,7 +53,7 @@ model.load_state_dict(state_dict)
 model.eval()
 
 def lambda_handler(event, context):
-    logger.info(event)
+    print(event)
     input_list = process_input(event['body'])
     model_feats = getSentenceFeatures(model, input_list)
     response = json.dumps(model_feats,cls=NumpyEncoder)
