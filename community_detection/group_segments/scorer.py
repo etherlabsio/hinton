@@ -1,3 +1,17 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.3'
+#       jupytext_version: 0.8.6
+#   kernelspec:
+#     display_name: sri_gpt
+#     language: python
+#     name: sri_gpt
+# ---
+
 import math
 from numpy import dot
 from numpy.linalg import norm
@@ -87,3 +101,5 @@ def get_embeddings(input_list, req_data=None):
         print (e)
         pass
     return embedding_vector
+
+

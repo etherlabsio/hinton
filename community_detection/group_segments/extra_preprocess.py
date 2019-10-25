@@ -1,9 +1,24 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.3'
+#       jupytext_version: 0.8.6
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 import sys
 sys.path.append("../../../ai-engine/pkg/")
 import text_preprocessing.preprocess as tp
 import nltk
 import iso8601
 from datetime import datetime
+from copy import deepcopy
 import json
 
 
@@ -24,6 +39,8 @@ def preprocess_text(text):
             continue
 
         mod_texts.append(sent)
+    if len(mod_texts)<2:
+        return ""
     return mod_texts
 
 
@@ -40,11 +57,17 @@ def format_time(tz_time, datetime_object=False):
 def format_pims_output(pim, req, segmentsmap, mindId):
     pims = {}
     pims["group"] = {}
+    print ("after this")
+    print (pim)
     for no in pim.keys():
         tmp_seg = []
         for seg in pim[no].keys():
-            tmp_seg.append(segmentsmap[pim[no][seg][-1]])
+            new_seg = {}
+            new_seg = deepcopy(segmentsmap[pim[no][seg][-1]])
+            #new_seg["originalText"] = pim[no][seg][0]
+            tmp_seg.append(new_seg)
         pims["group"][no] = tmp_seg
+    # pims["group"] = pim
     pims['contextId'] = (req)['contextId']
     pims['instanceId'] = (req)['instanceId']
     pims['mindId'] = mindId
