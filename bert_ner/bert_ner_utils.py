@@ -15,6 +15,7 @@
 from pytorch_transformers import AdamW, WarmupLinearSchedule
 from pytorch_transformers import WEIGHTS_NAME, BertConfig, BertForTokenClassification, BertTokenizer
 import torch
+import re
 
 class BERT_NER():
     '''
@@ -53,22 +54,22 @@ class BERT_NER():
             batch_size = mid - 1 - input_ids[:mid][::-1].index(self.tokenizer.encode(".")[0])
         else:
             batch_size = 510 
-        
+        entities={}
+        non_entities={}
         for i in range(0,len(input_ids),batch_size):
             encoded_text_sp = self.tokenizer.encode("[CLS]") + input_ids[i:i+batch_size] + self.tokenizer.encode("[SEP]")
             input_ids = torch.tensor(encoded_text_sp).unsqueeze(0)
-            entities={}
-            non_entities={}
+            
             with torch.no_grad():
                 outputs = self.model(input_ids)[0][0,1:-1]
-            for i,(tok,embed) in enumerate(zip(token_to_word,list(outputs))):
+            for j,(tok,embed) in enumerate(zip(token_to_word[i:i+batch_size],list(outputs))):
                 embed=embed.unsqueeze(0)
                 score = self.sm(embed).detach().numpy().max(-1)[0]
                 label = self.labels[self.sm(embed).argmax().detach().numpy()] 
                 if label!="O" or (label=="O" and score<0.95):
-                    entities[token_to_word[i]] = max(entities.get(token_to_word[i],0),score)
+                    entities[tok] = max(entities.get(tok,0),score)
                 else:
-                    non_entities[tokenized_text[i]] = score
+                    non_entities[tokenized_text[j]] = score
         if get_non_entities:
             return list(entities.keys()),list(entities.values()),list(non_entities.keys()),list(non_entities.values())
         return list(entities.keys()),list(entities.values())
@@ -81,3 +82,15 @@ class BERT_NER():
             return list(map(lambda x: x.capitalize(),words.split()))
         else:
             return words.upper().split()
+
+
+
+
+
+
+
+
+
+
+
+
