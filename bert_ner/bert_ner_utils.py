@@ -37,16 +37,14 @@ class BERT_NER():
         self.tokenizer = BertTokenizer.from_pretrained(model_path,do_lower_case = not cased)
         self.sm = torch.nn.Softmax(dim=1)
         self.labels = labels
-
-    
     def get_entities(self,text,get_non_entities=False):
         input_ids=[]
         tokenized_text = self.tokenize(text)
         token_to_word=[]
-        i=0
+        
         for word in text.split():
             toks = self.tokenizer.encode(word)
-            token_to_word.extend([word.lower().strip(".,?!'\"")]*len(toks))
+            token_to_word.extend([re.sub(r'[^a-zA-Z0-9_\'"*-]+','', word.lower())]*len(toks))
             input_ids.extend(toks)
         # Calculating batch size based on nearest "." from mid-point of text if length exceeds 512
         if len(input_ids)>512:
@@ -66,31 +64,42 @@ class BERT_NER():
                 embed=embed.unsqueeze(0)
                 score = self.sm(embed).detach().numpy().max(-1)[0]
                 label = self.labels[self.sm(embed).argmax().detach().numpy()] 
-                if label!="O" or (label=="O" and score<0.95):
+                if label!="O" or (label=="O" and score<0.98):
                     entities[tok] = max(entities.get(tok,0),score)
                 else:
                     non_entities[tokenized_text[j]] = score
+        final_entity_list, final_scores = self.concat_entities(text,entities)
         if get_non_entities:
-            return list(entities.keys()),list(entities.values()),list(non_entities.keys()),list(non_entities.values())
-        return list(entities.keys()),list(entities.values())
+            return final_entity_list, final_scores,list(non_entities.keys()),list(non_entities.values())
+        return final_entity_list, final_scores
     def tokenize(self,text):
         return self.tokenizer.tokenize(text)
 
-    def wordize(self,tokens, capitalize=False):
-        words =  self.tokenizer.convert_tokens_to_string(tokens)
+    def wordize(self,entities, capitalize=False):
         if capitalize:
-            return list(map(lambda x: x.capitalize(),words.split()))
+            return entities
         else:
-            return words.upper().split()
-
-
-
-
-
-
-
-
-
-
-
-
+            return "|".join(entities).casefold().split("|")
+    
+    def concat_entities(self,text,entities):
+        final_entity_list=[]
+        final_scores=[]
+        seen=[]
+        text = re.sub("[A-Z][.] ?[A-Z]",lambda x: x.group(0)[0]+" "+x.group(0)[-1],text)
+        split_text = [re.sub(r'[^a-zA-Z0-9_\'"*-,?!.]+','',w.lower()) for w in re.split("[ ]|([?.,!]+)",text) if w is not None]
+        for i in range(len(split_text)):
+            if i in seen:
+                continue
+            if split_text[i] in entities:
+                conc = split_text[i].strip("'\"").capitalize()+" "
+                score = entities[split_text[i]]
+                k=i+1
+                seen+=[i]
+                while k<len(split_text) and split_text[k] in entities:
+                    conc+=split_text[k].strip("'\"").capitalize()+" "
+                    seen+=[k]
+                    score += entities[split_text[k]]
+                    k+=1
+                final_entity_list += [conc.strip(" ,.")]
+                final_scores += [score/(k-i)]
+        return final_entity_list, final_scores
