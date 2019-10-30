@@ -85,8 +85,8 @@ class BERT_NER():
         final_entity_list=[]
         final_scores=[]
         seen=[]
-        text = re.sub("[A-Z][.] ?[A-Z]",lambda x: x.group(0)[0]+" "+x.group(0)[-1],text)
-        split_text = [re.sub(r'[^a-zA-Z0-9_\'"*-,?!.]+','',w.lower()) for w in re.split("[ ]|([?.,!]+)",text) if w is not None]
+        text = re.sub("[A-Z][.]\s?[A-Z]",lambda x: x.group(0)[0]+" "+x.group(0)[-1],text)
+        split_text = [re.sub(r'[^a-zA-Z0-9_\'"*-,?!.]+','',w.lower()) for w in re.split("[\s]|([?.,!]+)",text) if w is not None]
         for i in range(len(split_text)):
             if i in seen:
                 continue
