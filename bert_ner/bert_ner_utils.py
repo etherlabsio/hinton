@@ -97,8 +97,8 @@ class BERT_NER():
         seen=[]
         # handling abbreviations such as U.S.
         text = re.sub("[A-Z][.]\s?[A-Z][.]?",lambda mobj: mobj.group(0)[0] + " " + mobj.group(0)[-2],text).casefold()
-#         split_text = [re.sub(r'[^a-zA-Z0-9_\'*,?!.-]+','',w.lower()) for w in re.split("[\s]|([?.,!/]+)",text) if w is not None]
-        entity_words = [e.casefold() for e in ent_words if e!='']
+#         split_text = [re.sub(r'[^a-zA-Z0-9_\'*,?!.-]+','',w.lower()) for w in re.split("[\s]|([?.,!/]+)",text) if w is not None] 
+        entity_words = list(dict.fromkeys([e.casefold() for e in ent_words if e!='']))
         for i in range(len(entity_words)):
             if i in seen:
                 continue
@@ -116,4 +116,5 @@ class BERT_NER():
                     k+=1
                 final_entity_list += [conc.strip(" ,.")]
                 final_scores += [score/(k-i)]
-        return list(dict.fromkeys(final_entity_list)), list(dict.fromkeys(final_scores))
+        return final_entity_list, final_scores
+    
