@@ -47,7 +47,7 @@ class BERT_NER():
             if word not in ['',None]:
                 toks = self.tokenizer.encode(word)
                 # removing characters that usually do not appear within text
-                clean_word =re.sub(r'[^a-zA-Z0-9_\'*-]+','', word.lower()).strip()
+                clean_word =re.sub(r'[^a-zA-Z0-9_\'*-]+','',word).strip()
                 token_to_word.extend([clean_word]*len(toks))
                 input_ids.extend(toks)
                 
@@ -73,7 +73,7 @@ class BERT_NER():
                 label = self.labels[self.sm(embed).argmax().detach().numpy()]
                 # Consider Entities and Non-Entities with low confidence (false negatives)
                 if label!="O" or (label=="O" and score<0.98):
-                    entities[tok] = max(entities.get(tok,0),score)
+                    entities[tok.lower()] = max(entities.get(tok,0),score)
                     ent_words.append(tok)
                 else:
                     non_entities[tokenized_text[j]] = score
@@ -97,24 +97,24 @@ class BERT_NER():
         seen=[]
         # handling abbreviations such as U.S.
         text = re.sub("[A-Z][.]\s?[A-Z][.]?",lambda mobj: mobj.group(0)[0] + " " + mobj.group(0)[-2],text).casefold()
-#         split_text = [re.sub(r'[^a-zA-Z0-9_\'*,?!.-]+','',w.lower()) for w in re.split("[\s]|([?.,!/]+)",text) if w is not None] 
-        entity_words = list(dict.fromkeys([e.casefold() for e in ent_words if e!='']))
+        entity_words = list(dict.fromkeys([e for e in ent_words if e!='']))
         for i in range(len(entity_words)):
             if i in seen:
                 continue
-            if text.count(entity_words[i])>=1:
-                conc = entity_words[i].strip("'\"").capitalize()+" "
+            if text.count(entity_words[i].casefold())>=1:
+                conc = entity_words[i].strip("'\"")+" "
+                conc = conc if conc[0].isupper() else conc.capitalize()
                 check = entity_words[i]+" "
-                score = entities[entity_words[i]]
+                score = entities[entity_words[i].lower()]
                 k=i+1
                 seen+=[i]
-                while k<len(entity_words) and text.count(check.casefold()+entity_words[k])>=1:
-                    conc+=entity_words[k].strip("'\"").capitalize()+" "
+                while k<len(entity_words) and text.count(check.casefold()+entity_words[k].casefold())>=1:
+                    conc_word=entity_words[k].strip("'\"")+" "
+                    conc += conc_word if conc_word[0].isupper() else conc_word.capitalize()
                     check+= entity_words[k]+" "
                     seen+=[k]
-                    score += entities[entity_words[k]]
+                    score += entities[entity_words[k].lower()]
                     k+=1
                 final_entity_list += [conc.strip(" ,.")]
                 final_scores += [score/(k-i)]
         return final_entity_list, final_scores
-    
