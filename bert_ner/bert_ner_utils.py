@@ -41,18 +41,25 @@ class BERT_NER():
         input_ids=[]
         tokenized_text = self.tokenize(text)
         token_to_word=[]
-        
-        for word in text.split():
-            toks = self.tokenizer.encode(word)
-            token_to_word.extend([re.sub(r'[^a-zA-Z0-9_\'"*-]+','', word.lower())]*len(toks))
-            input_ids.extend(toks)
+        #splitting text, preserving punctuation
+        split_text = re.split("[\s]|([?.,!/]+)",text)
+        for word in split_text:
+            if word not in ['',None]:
+                toks = self.tokenizer.encode(word)
+                # removing characters that usually do not appear within text
+                clean_word =re.sub(r'[^a-zA-Z0-9_\'*-]+','', word.lower()).strip()
+                token_to_word.extend([clean_word]*len(toks))
+                input_ids.extend(toks)
+                
         # Calculating batch size based on nearest "." from mid-point of text if length exceeds 512
         if len(input_ids)>512:
             mid = len(input_ids)//2
             batch_size = mid - 1 - input_ids[:mid][::-1].index(self.tokenizer.encode(".")[0])
         else:
             batch_size = 510 
+            
         entities={}
+        ent_words=[]
         non_entities={}
         for i in range(0,len(input_ids),batch_size):
             encoded_text_sp = self.tokenizer.encode("[CLS]") + input_ids[i:i+batch_size] + self.tokenizer.encode("[SEP]")
@@ -63,12 +70,14 @@ class BERT_NER():
             for j,(tok,embed) in enumerate(zip(token_to_word[i:i+batch_size],list(outputs))):
                 embed=embed.unsqueeze(0)
                 score = self.sm(embed).detach().numpy().max(-1)[0]
-                label = self.labels[self.sm(embed).argmax().detach().numpy()] 
+                label = self.labels[self.sm(embed).argmax().detach().numpy()]
+                # Consider Entities and Non-Entities with low confidence (false negatives)
                 if label!="O" or (label=="O" and score<0.98):
                     entities[tok] = max(entities.get(tok,0),score)
+                    ent_words.append(tok)
                 else:
                     non_entities[tokenized_text[j]] = score
-        final_entity_list, final_scores = self.concat_entities(text,entities)
+        final_entity_list, final_scores = self.concat_entities(text,entities,ent_words)
         if get_non_entities:
             return final_entity_list, final_scores,list(non_entities.keys()),list(non_entities.values())
         return final_entity_list, final_scores
@@ -76,30 +85,35 @@ class BERT_NER():
         return self.tokenizer.tokenize(text)
 
     def wordize(self,entities, capitalize=False):
+        'capitalize=False returns casefolded string'
         if capitalize:
             return entities
         else:
             return "|".join(entities).casefold().split("|")
     
-    def concat_entities(self,text,entities):
+    def concat_entities(self,text,entities, ent_words):
         final_entity_list=[]
         final_scores=[]
         seen=[]
-        text = re.sub("[A-Z][.]\s?[A-Z]",lambda x: x.group(0)[0]+" "+x.group(0)[-1],text)
-        split_text = [re.sub(r'[^a-zA-Z0-9_\'"*-,?!.]+','',w.lower()) for w in re.split("[\s]|([?.,!]+)",text) if w is not None]
-        for i in range(len(split_text)):
+        # handling abbreviations such as U.S.
+        text = re.sub("[A-Z][.]\s?[A-Z][.]?",lambda mobj: mobj.group(0)[0] + " " + mobj.group(0)[-2],text).casefold()
+#         split_text = [re.sub(r'[^a-zA-Z0-9_\'*,?!.-]+','',w.lower()) for w in re.split("[\s]|([?.,!/]+)",text) if w is not None]
+        entity_words = [e.casefold() for e in ent_words if e!='']
+        for i in range(len(entity_words)):
             if i in seen:
                 continue
-            if split_text[i] in entities:
-                conc = split_text[i].strip("'\"").capitalize()+" "
-                score = entities[split_text[i]]
+            if text.count(entity_words[i])>=1:
+                conc = entity_words[i].strip("'\"").capitalize()+" "
+                check = entity_words[i]+" "
+                score = entities[entity_words[i]]
                 k=i+1
                 seen+=[i]
-                while k<len(split_text) and split_text[k] in entities:
-                    conc+=split_text[k].strip("'\"").capitalize()+" "
+                while k<len(entity_words) and text.count(check.casefold()+entity_words[k])>=1:
+                    conc+=entity_words[k].strip("'\"").capitalize()+" "
+                    check+= entity_words[k]+" "
                     seen+=[k]
-                    score += entities[split_text[k]]
+                    score += entities[entity_words[k]]
                     k+=1
                 final_entity_list += [conc.strip(" ,.")]
                 final_scores += [score/(k-i)]
-        return final_entity_list, final_scores
+        return list(dict.fromkeys(final_entity_list)), list(dict.fromkeys(final_scores))
