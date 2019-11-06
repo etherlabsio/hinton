@@ -1,7 +1,7 @@
 {
 	"body": {
 		"contextId": "01DBB3SN8MW96BFY5DVF156WQG",
-		"mindId": "01DAAQY88QZB19JQZ5PRJFR76Y",
+		"mindId": "01dadp74wfv607knpcb6vvxgtg",
 		"instanceId": "2b1e7d5c-53f2-4cdb-9dea-3a19a9c5b7d7",
 		"segments": [{
 				"id": "b98f10200ffe4d96a565e14cdb77b774",

@@ -21,53 +21,21 @@ import logging
 from botocore.client import Config
 import numpy as np
 from copy import deepcopy
-import os
-import boto3
 
 logger = logging.getLogger(__name__)
 
 config = Config(connect_timeout=240, read_timeout=240, retries={'max_attempts': 0}, )
 lambda_client = boto3_client('lambda', config=config)
-s3 = boto3.resource('s3')
 
 
-# +
 def cosine(vec1, vec2):
     return dot(vec1, vec2) / (norm(vec1) * norm(vec2))
 
-def getClusterScore(mind_vec, sent_vec):
-    n1 = norm(mind_vec,axis=1).reshape(1,-1)
-    n2 = norm(sent_vec,axis=1).reshape(-1,1)
-    dotp = dot(sent_vec, mind_vec).squeeze(2)
-    segment_scores = dotp/(n2*n1)
-    return segment_scores
 
-
-
-# +
-
-def get_mind_score(segment_fv, mind_dict):
-    feats = list(mind_dict['feature_vector'].values())
-    mind_vector = np.array(feats).reshape(len(feats), -1)
-    temp_vector = np.array(segment_fv)
-    mind_score = []
-    batch_size = min(10, temp_vector.shape[0])
-    for i in range(0, temp_vector.shape[0],batch_size):
-        mind_vec = np.expand_dims(np.array(mind_vector),2)
-        sent_vec = temp_vector[i:i+batch_size]
-        cluster_scores = getClusterScore(mind_vec,sent_vec)
-        batch_scores = cluster_scores.max(1)
-        mind_score.extend(batch_scores)
-
-    return mind_score
-
-def get_feature_vector(input_list, lambda_function, mind_f):
-    # logger.info("computing feature vector", extra={"msg": "getting feature vector from mind service"})
-    feats = list(mind_f['feature_vector'].values())
-    mind_f = np.array(feats).reshape(len(feats), -1)
+def get_feature_vector(input_list, lambda_function):
+ # logger.info("computing feature vector", extra={"msg": "getting feature vector from mind service"})
     batches_count = 300
     feature_vector = []
-    mind_score = []
     count = math.ceil(len(input_list)/batches_count)
     logger.info("computing in batches", extra={"batches count": count, "number of sentences": len(input_list)})
     for itr in range(count):
@@ -79,36 +47,20 @@ def get_feature_vector(input_list, lambda_function, mind_f):
         logger.info("Request Sent", extra={"iteration count": itr})
         # logger.info("computing feature vector", extra={"msg": "Request Sent"})
         out_json = invoke_response['Payload'].read().decode('utf8').replace("'", '"')
+        print ("Recieved Response. Checking if it's valid.")
         data = json.loads(json.loads(out_json)['body'])
+        print ("Valid Response from mind service.")
         response = json.loads(out_json)['statusCode']
 
         if response == 200:
-            temp_vector = np.array(data['sent_feats'][0])
             feature_vector.extend(data['sent_feats'][0])
-            print("recieved Feature Vector")
-            #for f in np.array(data['sent_feats'][0]):
-            #    print (getClusterScore(mind_f, f))
-            #    mind_score.extend(getClusterScore(mind_f, f))
-
-            batch_size = min(10, temp_vector.shape[0])
-            for i in range(0, temp_vector.shape[0],batch_size):
-                mind_vec = np.expand_dims(np.array(mind_f),2)
-                sent_vec = temp_vector[i:i+batch_size]
-
-                cluster_scores = getClusterScore(mind_vec,sent_vec)
-
-                batch_scores = cluster_scores.max(1)
-                mind_score.extend(batch_scores)
-
             logger.info("Response Recieved")
 
             # logger.info("computing feature vector", extra={"msg": "Response Recieved"})
         else:
             logger.error("Invalid response from  mind service")
             # logger.error("computing feature vector", extra={"msg": "Invalid response from  mind service"})
-    return feature_vector, mind_score
-
-# -
+    return feature_vector
 
 
 def get_embeddings(input_list, req_data=None):
