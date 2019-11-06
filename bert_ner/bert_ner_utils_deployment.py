@@ -1,3 +1,4 @@
+# pytorch_transformers version 1.1.0
 from pytorch_transformers import AdamW, WarmupLinearSchedule
 from pytorch_transformers import WEIGHTS_NAME, BertConfig, BertForTokenClassification, BertTokenizer
 import torch
