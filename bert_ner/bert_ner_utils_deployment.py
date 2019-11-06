@@ -7,7 +7,7 @@ from nltk import sent_tokenize
 class BERT_NER():
     '''
     USAGE:
-            ner_model = BERT_NER('../models/bert-ner-uncased-2/',cased=False)
+            ner_model = BERT_NER('/path-to-model-folder/bert-ner-uncased-2/',cased=False)
             text = "the city new york has a beautiful skyline around central park. I would like to see it some day."
             entities, confidence_scores = ner_model.get_entities(text)
     '''
