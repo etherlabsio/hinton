@@ -1,16 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: light
-#       format_version: '1.3'
-#       jupytext_version: 0.8.6
-#   kernelspec:
-#     display_name: Arjun
-#     language: python
-#     name: arjun
-# ---
 
 from pytorch_transformers import AdamW, WarmupLinearSchedule
 from pytorch_transformers import WEIGHTS_NAME, BertConfig, BertForTokenClassification, BertTokenizer
@@ -28,7 +15,8 @@ class BERT_NER():
     def __init__(self, model_path,
                  labels = ["O","E"], cased=False):
         self.model = BertForTokenClassification.from_pretrained(model_path)
-        self.tokenizer = BertTokenizer.from_pretrained(model_path,do_lower_case = not cased)
+        self.model.eval()
+        self.tokenizer = BertTokenizer.from_pretrained(model_path, do_lower_case = not cased)
         self.sm = torch.nn.Softmax(dim=1)
         self.labels = labels
         self.contractions = {"ain't": 'am not', "aren't": 'are not', "can't": 'cannot', "can't've": 'cannot have', "'cause": 'because', "could've": 'could have', "couldn't": 'could not', "couldn't've": 'could not have', "didn't": 'did not', "doesn't": 'does not', "don't": 'do not', "hadn't": 'had not', "hadn't've": 'had not have', "hasn't": 'has not', "haven't": 'have not', "he'd": 'he would', "he'd've": 'he would have', "he'll": 'he will', "he's": 'he is', "how'd": 'how did', "how'll": 'how will', "how's": 'how is', "i'd": 'i would', "i'll": 'i will', "i'm": 'i am', "i've": 'i have', "isn't": 'is not', "it'd": 'it would', "it'll": 'it will', "it's": 'it is', "let's": 'let us', "ma'am": 'madam', "mayn't": 'may not', "might've": 'might have', "mightn't": 'might not', "must've": 'must have', "mustn't": 'must not', "needn't": 'need not', "oughtn't": 'ought not', "shan't": 'shall not', "sha'n't": 'shall not', "she'd": 'she would', "she'll": 'she will', "she's": 'she is', "should've": 'should have', "shouldn't": 'should not', "that'd": 'that would', "that's": 'that is', "there'd": 'there had', "there's": 'there is', "they'd": 'they would', "they'll": 'they will', "they're": 'they are', "they've": 'they have', "wasn't": 'was not', "we'd": 'we would', "we'll": 'we will', "we're": 'we are', "we've": 'we have', "weren't": 'were not', "what'll": 'what will', "what're": 'what are', "what's": 'what is', "what've": 'what have', "where'd": 'where did', "where's": 'where is', "who'll": 'who will', "who's": 'who is', "won't": 'will not', "wouldn't": 'would not', "you'd": 'you would', "you'll": 'you will', "you're": 'you are'}
@@ -74,6 +62,12 @@ class BERT_NER():
                 token_to_word.extend([clean_word]*len(toks))
                 input_ids.extend(toks)
                 
+        entities = self.extract_entities(input_ids,token_to_word)
+        
+        sent_entity_list, sent_scores = self.concat_entities(clean_text,entities)
+        return sent_entity_list, sent_scores
+    
+    def extract_entities(self,input_ids, token_to_word):
         # Calculating batch size based on nearest "." from mid-point of text if length exceeds 512
         if len(input_ids)>512:
             mid = len(input_ids)//2
@@ -82,12 +76,12 @@ class BERT_NER():
             batch_size = 510 
             
         entities=[]
-        potential_entities=[]
         for i in range(0,len(input_ids),batch_size):
             encoded_text_sp = self.tokenizer.encode("[CLS]") + input_ids[i:i+batch_size] + self.tokenizer.encode("[SEP]")
             input_ids = torch.tensor(encoded_text_sp).unsqueeze(0)
             with torch.no_grad():
                 outputs = self.model(input_ids)[0][0,1:-1]
+
             for j,(tok,embed) in enumerate(zip(token_to_word[i:i+batch_size],list(outputs))):
                 embed=embed.unsqueeze(0)
                 score = self.sm(embed).detach().numpy().max(-1)[0]
@@ -95,9 +89,7 @@ class BERT_NER():
                 # Consider Entities and Non-Entities with low confidence (false negatives)
                 if label!="O" or (label=="O" and score<0.99):
                     entities.append((tok,score))
-        
-        sent_entity_list, sent_scores = self.concat_entities(clean_text,entities)
-        return sent_entity_list, sent_scores
+        return entities
     
     def tokenize(self,text):
         return self.tokenizer.tokenize(text)
@@ -133,15 +125,3 @@ class BERT_NER():
                 sent_scores += [score/(k-i)]
         
         return sent_entity_list,sent_scores
-
-
-
-
-
-
-
-
-
-
-
-
