@@ -32,6 +32,7 @@ class BERT_NER():
     def get_entities(self,text):
         segment_entities=[]
         segment_scores=[]
+        text = text+" "
         for sent in sent_tokenize(text):
             sent_ent, sent_score= self.get_entities_from_sentence(sent)
             
