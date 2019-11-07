@@ -1,5 +1,5 @@
 # pytorch_transformers version 1.1.0
-from pytorch_transformers import BertConfig, BertForTokenClassification, BertTokenizer
+from pytorch_transformers import BertForTokenClassification, BertTokenizer
 import torch
 import re
 from nltk import sent_tokenize
