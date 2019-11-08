@@ -40,7 +40,7 @@ class BERT_NER():
             entities, confidence_scores = ner_model.get_entities(text)
     '''
     def __init__(self, 
-                 model_path):
+                 model_path,labels=["O","E"]):
         
         self.labels = labels
         if model_path[-1]!="/":
