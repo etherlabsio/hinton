@@ -16,7 +16,7 @@ from pytorch_transformers import BertPreTrainedModel, BertTokenizer, BertModel, 
 import torch
 import torch.nn as nn
 import re
-from nltk import sent_tokenize
+from nltk import sent_tokenize, pos_tag
 from itertools import groupby 
 
 class BertForTokenClassification_custom(BertPreTrainedModel):
@@ -72,7 +72,8 @@ class BERT_NER():
         self.sm = nn.Softmax(dim=1)
         self.conf = 0.995
         self.contractions = {"[sep]":"separator","[cls]":"classify","ain't": 'am not', "aren't": 'are not', "can't": 'cannot', "can't've": 'cannot have', "'cause": 'because', "could've": 'could have', "couldn't": 'could not', "couldn't've": 'could not have', "didn't": 'did not', "doesn't": 'does not', "don't": 'do not', "hadn't": 'had not', "hadn't've": 'had not have', "hasn't": 'has not', "haven't": 'have not', "he'd": 'he would', "he'd've": 'he would have', "he'll": 'he will', "he's": 'he is', "how'd": 'how did', "how'll": 'how will', "how's": 'how is', "i'd": 'i would', "i'll": 'i will', "i'm": 'i am', "i've": 'i have', "isn't": 'is not', "it'd": 'it would', "it'll": 'it will', "it's": 'it is', "let's": 'let us', "ma'am": 'madam', "mayn't": 'may not', "might've": 'might have', "mightn't": 'might not', "must've": 'must have', "mustn't": 'must not', "needn't": 'need not', "oughtn't": 'ought not', "shan't": 'shall not', "sha'n't": 'shall not', "she'd": 'she would', "she'll": 'she will', "she's": 'she is', "should've": 'should have', "shouldn't": 'should not', "that'd": 'that would', "that's": 'that is', "there'd": 'there had', "there's": 'there is', "they'd": 'they would', "they'll": 'they will', "they're": 'they are', "they've": 'they have', "wasn't": 'was not', "we'd": 'we would', "we'll": 'we will', "we're": 'we are', "we've": 'we have', "weren't": 'were not', "what'll": 'what will', "what're": 'what are', "what's": 'what is', "what've": 'what have', "where'd": 'where did', "where's": 'where is', "who'll": 'who will', "who's": 'who is', "won't": 'will not', "wouldn't": 'would not', "you'd": 'you would', "you'll": 'you will', "you're": 'you are'}
-    
+        self.stop_words = {'','oh','uh','um','huh','right','yeah','okay','ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about', 'once', 'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be', 'some', 'for', 'do', 'its', 'yours', 'such', 'into', 'of', 'most', 'itself', 'other', 'off', 'is', 's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves', 'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through', 'don', 'nor', 'me', 'were', 'her', 'more', 'himself', 'this', 'down', 'should', 'our', 'their', 'while', 'above', 'both', 'up', 'to', 'ours', 'had', 'she', 'all', 'no', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does', 'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'not', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where', 'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few', 'whom', 't', 'being', 'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was', 'here', 'than'}
+        
     def replace_contractions(self, 
                              text):
         for word in text.split(' '):
@@ -104,20 +105,39 @@ class BERT_NER():
         
         # cleaning and splitting text, preserving punctuation
         clean_text = self.replace_contractions(text)
-        split_text = re.split("[\s]|([?.,!/]+)",clean_text)
-        
+        split_text = list(filter(lambda word: word not in ['',None],re.split("[\s]|([?.,!/]+)",clean_text)))
+        pos_dict = dict(pos_tag(split_text))
         for word in split_text:
-            if word not in ['',None]:
-                toks = self.tokenizer.encode(word)
-                # removing characters that usually do not appear within text
-                clean_word =re.sub(r'[^a-zA-Z0-9_\'*-]+','',word).strip()
-                token_to_word.extend([clean_word]*len(toks))
-                input_ids.extend(toks)
-                
-        entities = self.extract_entities(input_ids,token_to_word)
+            toks = self.tokenizer.encode(word)
+            # removing characters that usually do not appear within text
+            clean_word =re.sub(r'[^a-zA-Z0-9_\'*-]+','',word).strip()
+            token_to_word.extend([clean_word]*len(toks))
+            input_ids.extend(toks)
         
+        entities = self.extract_entities(input_ids,token_to_word)
         sent_entity_list, sent_scores = self.concat_entities(clean_text,entities)
+        if len(sent_entity_list)>0:
+            sent_entity_list, sent_scores = self.filter_entities(sent_entity_list,sent_scores, pos_dict)
+        
         return sent_entity_list, sent_scores
+    
+    def filter_entities(self,sent_entity_list,sent_scores, pos_dict):
+        filt_ents, filt_scores=[],[]
+        filtered_entity_tuples = list(filter(lambda ent: not (len(ent[0].split())==1 and pos_dict[ent[0]][0]=="V"),zip(sent_entity_list,sent_scores)))
+        if len(filtered_entity_tuples)>0:
+            filt_ents, filt_scores = zip(*filtered_entity_tuples)
+            filt_ents = self.capitalize_entities(filt_ents)
+        return filt_ents, filt_scores
+            
+    
+    def capitalize_entities(self,entity_list):
+        def capitalize_entity(ent):
+            if not ent[0].isupper():
+                ent = ent.capitalize()
+            return ent
+        entity_list = list(map(lambda entities: " ".join(list(map(lambda ent: capitalize_entity(ent),entities.split()))),entity_list))
+        
+        return entity_list
     
     def extract_entities(self, 
                          input_ids, 
@@ -140,7 +160,7 @@ class BERT_NER():
                 score = self.sm(embed).detach().numpy().max(-1)[0]
                 label = self.labels[self.sm(embed).argmax().detach().numpy()]
                 # Consider Entities and Non-Entities with low confidence (false negatives)
-                if tok!='':
+                if tok.casefold() not in self.stop_words:
                     if label!="O" or (label=="O" and score<self.conf):
                         entities.append((tok,score))
         return entities
@@ -159,14 +179,21 @@ class BERT_NER():
 #         text = re.sub("[A-Z][.]\s?[A-Z][.]?",lambda mobj: mobj.group(0)[0] + " " + mobj.group(0)[-2],text).casefold()
         text = re.sub("[A-Z][.]\s?",lambda mobj: mobj.group(0)[0]+" ",text).casefold()
         # remove consecutive duplicate entities
-        entity_words = [i[0] for i in groupby(map(lambda x: x[0],entities))]
-        entity_scores = {e[0]:e[1] for e in entities}
+        entity_words = [
+            grouped_entity[0]
+            for grouped_entity in groupby(
+                map(lambda ent_score_tuple: ent_score_tuple[0], entities)
+            )
+        ]
+        entity_scores = {
+            ent_score_tuple[0]: ent_score_tuple[1] for ent_score_tuple in entities
+        }
         for i in range(len(entity_words)):
             if i in seen:
                 continue
             if entity_words[i].casefold() in text:
                 conc = entity_words[i].strip("'\"")+" "
-                conc = conc if conc[0].isupper() else conc.capitalize()
+                conc = conc #if conc[0].isupper() or retain_casing else conc.capitalize()
                 
                 check = entity_words[i]+" "
                 score = entity_scores[entity_words[i]]
@@ -175,7 +202,7 @@ class BERT_NER():
             
                 while k<len(entity_words) and (check.casefold()+entity_words[k].casefold() in text):
                     conc_word=entity_words[k].strip("'\"")+" "
-                    conc += conc_word if conc_word[0].isupper() else conc_word.capitalize()
+                    conc += conc_word #if conc_word[0].isupper() or retain_casing else conc_word.capitalize()
                     
                     check+= entity_words[k]+" "
                     score += entity_scores[entity_words[k]]
@@ -185,11 +212,3 @@ class BERT_NER():
                 sent_scores += [score/(k-i)]
         
         return sent_entity_list,sent_scores
-
-
-
-
-
-
-
-
