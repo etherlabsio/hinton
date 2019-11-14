@@ -1,23 +1,9 @@
-# ---
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: light
-#       format_version: '1.3'
-#       jupytext_version: 0.8.6
-#   kernelspec:
-#     display_name: Arjun
-#     language: python
-#     name: arjun
-# ---
-
 from pytorch_transformers import BertPreTrainedModel, BertTokenizer, BertModel, BertConfig
 import torch
 import torch.nn as nn
 import re
 from nltk import sent_tokenize, pos_tag
-from itertools import groupby 
+from itertools import groupby
 
 class BertForTokenClassification_custom(BertPreTrainedModel):
     def __init__(self, 
@@ -76,6 +62,7 @@ class BERT_NER():
         
     def replace_contractions(self, 
                              text):
+        text = re.sub("[A-Z]\. ",lambda mobj: mobj.group(0)[0]+mobj.group(0)[1],text)
         for word in text.split(' '):
             if self.contractions.get(word.lower()):
                 text = text.replace(word,self.contractions[word.lower()])
@@ -105,29 +92,21 @@ class BERT_NER():
         
         # cleaning and splitting text, preserving punctuation
         clean_text = self.replace_contractions(text)
-        split_text = list(filter(lambda word: word not in ['',None],re.split("[\s]|([?.,!/]+)",clean_text)))
-        pos_dict = dict(pos_tag(split_text))
-        for word in split_text:
+        split_text = list(filter(lambda word: word not in ['',None],re.split("[\s]|([?,!/]+)|\.(\w{2,})",clean_text)))
+        pos_text = pos_tag(split_text)
+        for (word,tag) in pos_text:
             toks = self.tokenizer.encode(word)
             # removing characters that usually do not appear within text
-            clean_word =re.sub(r'[^a-zA-Z0-9_\'*-]+','',word).strip()
-            token_to_word.extend([clean_word]*len(toks))
+            clean_word =re.sub(r'[^a-zA-Z0-9_\'*-.]+','',word).strip()
+            token_to_word.extend([(clean_word,tag)]*len(toks))
             input_ids.extend(toks)
         
         entities = self.extract_entities(input_ids,token_to_word)
         sent_entity_list, sent_scores = self.concat_entities(clean_text,entities)
         if len(sent_entity_list)>0:
-            sent_entity_list, sent_scores = self.filter_entities(sent_entity_list,sent_scores, pos_dict)
+            sent_entity_list = self.capitalize_entities(sent_entity_list)
         
         return sent_entity_list, sent_scores
-    
-    def filter_entities(self,sent_entity_list,sent_scores, pos_dict):
-        filt_ents, filt_scores=[],[]
-        filtered_entity_tuples = list(filter(lambda ent: not (len(ent[0].split())==1 and pos_dict[ent[0]][0]=="V"),zip(sent_entity_list,sent_scores)))
-        if len(filtered_entity_tuples)>0:
-            filt_ents, filt_scores = zip(*filtered_entity_tuples)
-            filt_ents = self.capitalize_entities(filt_ents)
-        return filt_ents, filt_scores
             
     
     def capitalize_entities(self,entity_list):
@@ -155,14 +134,15 @@ class BERT_NER():
             with torch.no_grad():
                 outputs = self.model(input_tensor)[0][0,1:-1]
 
-            for j,(tok,embed) in enumerate(zip(token_to_word[i:i+batch_size],list(outputs))):
+            for j,((tok,tag),embed) in enumerate(zip(token_to_word[i:i+batch_size],list(outputs))):
                 embed=embed.unsqueeze(0)
                 score = self.sm(embed).detach().numpy().max(-1)[0]
                 label = self.labels[self.sm(embed).argmax().detach().numpy()]
                 # Consider Entities and Non-Entities with low confidence (false negatives)
                 if tok.casefold() not in self.stop_words:
                     if label!="O" or (label=="O" and score<self.conf):
-                        entities.append((tok,score))
+                        entities.append((tok,score,tag))
+        
         return entities
     
     def tokenize(self, 
@@ -175,40 +155,41 @@ class BERT_NER():
         sent_entity_list=[]
         sent_scores=[]
         seen=[]
-        # handling abbreviations such as U.S.
-#         text = re.sub("[A-Z][.]\s?[A-Z][.]?",lambda mobj: mobj.group(0)[0] + " " + mobj.group(0)[-2],text).casefold()
-        text = re.sub("[A-Z][.]\s?",lambda mobj: mobj.group(0)[0]+" ",text).casefold()
+        # handling acronym followed by capitalized entitity
+        text = re.sub("\.(\w{2,})",lambda mobj: " "+mobj.group(1),text).casefold()
+        print(text,entities)
         # remove consecutive duplicate entities
-        entity_words = [
+        # (word, score, pos_tag)
+        grouped_words = [
             grouped_entity[0]
-            for grouped_entity in groupby(
-                map(lambda ent_score_tuple: ent_score_tuple[0], entities)
-            )
+            for grouped_entity in groupby(entities,key=lambda x:(x[0],x[2]))
         ]
-        entity_scores = {
-            ent_score_tuple[0]: ent_score_tuple[1] for ent_score_tuple in entities
-        }
-        for i in range(len(entity_words)):
+        grouped_scores = {(ent[0],ent[2]):ent[1] for ent in entities}
+        for i in range(len(grouped_words)):
             if i in seen:
                 continue
-            if entity_words[i].casefold() in text:
-                conc = entity_words[i].strip("'\"")+" "
-                conc = conc #if conc[0].isupper() or retain_casing else conc.capitalize()
-                
-                check = entity_words[i]+" "
-                score = entity_scores[entity_words[i]]
-                seen+=[i]
-                k=i+1
-            
-                while k<len(entity_words) and (check.casefold()+entity_words[k].casefold() in text):
-                    conc_word=entity_words[k].strip("'\"")+" "
-                    conc += conc_word #if conc_word[0].isupper() or retain_casing else conc_word.capitalize()
-                    
-                    check+= entity_words[k]+" "
-                    score += entity_scores[entity_words[k]]
-                    seen+=[k]
-                    k+=1
-                sent_entity_list += [conc.strip(" ,.")]
-                sent_scores += [score/(k-i)]
+
+            conc = grouped_words[i][0].strip("'\"")+" "
+            conc = conc #if conc[0].isupper() or retain_casing else conc.capitalize()
+
+            check = grouped_words[i][0]+" "
+            score = grouped_scores[grouped_words[i]]
+            seen+=[i]
+            k=i+1
+
+            while k<len(grouped_words) and (check.casefold()+grouped_words[k][0].casefold() in text):
+                conc_word=grouped_words[k][0].strip("'\"")+" "
+                conc += conc_word #if conc_word[0].isupper() or retain_casing else conc_word.capitalize()
+
+                check+= grouped_words[k][0]+" "
+                score += grouped_scores[grouped_words[k]]
+                seen+=[k]
+                k+=1
+            # remove single verb entities
+            if len(conc.split())==1 and grouped_words[i][1][0] in ["V","J"]:
+                continue
+
+            sent_entity_list += [conc.strip(" ,.")]
+            sent_scores += [score/(k-i)]
         
         return sent_entity_list,sent_scores
