@@ -155,9 +155,8 @@ class BERT_NER():
         sent_entity_list=[]
         sent_scores=[]
         seen=[]
-        # handling acronym followed by capitalized entitity
+        # handling acronym followed by capitalized entity
         text = re.sub("\.(\w{2,})",lambda mobj: " "+mobj.group(1),text).casefold()
-        print(text,entities)
         # remove consecutive duplicate entities
         # (word, score, pos_tag)
         grouped_words = [
@@ -185,7 +184,7 @@ class BERT_NER():
                 score += grouped_scores[grouped_words[k]]
                 seen+=[k]
                 k+=1
-            # remove single verb entities
+            # remove single verb and adjective entities
             if len(conc.split())==1 and grouped_words[i][1][0] in ["V","J"]:
                 continue
 
