@@ -185,7 +185,7 @@ class BERT_NER():
                 seen+=[k]
                 k+=1
             # remove single verb and adjective entities
-            if len(conc.split())==1 and grouped_words[i][1][0] in ["V","J"]:
+            if len(conc.split())==1 and grouped_words[i][1][0] in ["V","J","."]:
                 continue
 
             sent_entity_list += [conc.strip(" ,.")]
