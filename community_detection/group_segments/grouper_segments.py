@@ -29,7 +29,7 @@ import math
 from scorer import cosine
 import community
 from datetime import datetime
-from scorer import get_feature_vector, get_embeddings
+from scorer import get_feature_vector, get_embeddings, get_feature_vector_local
 from collections import Counter
 import logging
 from log.logger import setup_server_logger
@@ -39,6 +39,7 @@ logger = logging.getLogger()
 #import gpt_feat_utils
 
 #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+sim_ep3/", device="cuda")
+#gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+nsp_sim_ep3/", device="cuda")
 # -
 
 
@@ -121,7 +122,7 @@ class community_detection():
         return fv, graph_list
 
 
-    def compute_feature_vector_gpt(self):
+    def compute_feature_vector_gpt(self, local=False):
         graph_list = {}
         fv_mapped_score = {}
         input_list = []
@@ -131,8 +132,10 @@ class community_detection():
             for sent in segment['originalText']:
                 if sent != '':
                     input_list.append(sent)
-
-        transcript_score, mind_score = get_feature_vector(input_list, self.lambda_function, self.mind_features)
+        if not local:
+            transcript_score, mind_score = get_feature_vector(input_list, self.lambda_function, self.mind_features)
+        else:
+            transcript_score, mind_score = get_feature_vector_local(input_list, self.lambda_function, self.mind_features, gpt_model)
         for segment in self.segments_list:
             for sent in segment['originalText']:
                 if sent != '':
@@ -201,13 +204,20 @@ class community_detection():
         c_weight = 0
         for nodea in graph_list.keys():
             for nodeb in graph_list.keys():
-                if nodeb > nodea:
-                    #c_weight = cosine(fv[nodea], fv[nodeb])
-                    c_weight = 1 - cityblock(fv[nodea], fv[nodeb])
-                    #print (nodea, nodeb)
-                    #c_weight = gpt_model.get_sim_score(graph_list[nodea][0], graph_list[nodeb][0])
-                    meeting_graph.add_edge(nodea, nodeb, weight=c_weight)
-                    yetto_prune.append((nodea, nodeb, c_weight))
+                #if nodeb > nodea:
+                c_weight = cosine(fv[nodea], fv[nodeb])
+                # c_weight =  -gpt_model.get_feat_sim(fv[nodea], fv[nodeb])
+                #c_weight = 1 - cityblock(fv[nodea], fv[nodeb])
+                # print (nodea, nodeb)
+                #if self.segments_order[graph_list[nodeb][-1]] == 1 + self.segments_order[graph_list[nodea][-1]]:
+                #c_weight +=  -gpt_model.get_feat_sim(fv[nodea], fv[nodeb])
+                meeting_graph.add_edge(nodea, nodeb, weight=c_weight)
+                yetto_prune.append((nodea, nodeb, c_weight))
+                
+#                 if self.segments_order[graph_list[nodea][-1]] - self.segments_order[graph_list[nodeb][-1]] == (0 or -1):
+#                     c_weight = cosine(fv[nodea], fv[nodeb])
+#                     meeting_graph.add_edge(nodea, nodeb, weight=c_weight)
+#                     yetto_prune.append((nodea, nodeb, c_weight))
 
         logger.info("Normalising the Graph", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
         # Y = nx.adjacency_matrix(meeting_graph).toarray()
@@ -313,6 +323,7 @@ class community_detection():
                     
         # print (clusters)
         for cluster in clusters:
+            print ("After removing overlapping groups")
             print ("cluster =========>")
             for sent in cluster:
                 print (graph_list[sent[0]][0])
@@ -348,6 +359,9 @@ class community_detection():
             else:
                 self.segments_order[segid] = sudo_index
                 sudo_index+=1
+                
+        for seg in self.segments_order.keys():
+            print (self.segments_map[seg])
         return True
     def group_community_by_time(self, timerange):
         # print (self.segments_order)
@@ -486,6 +500,14 @@ class community_detection():
         return new_pim
 
     def wrap_community_by_time_refined(self, pims):
+        # Add segments which were dangling. 
+        c_len = 0
+        for segment in self.segments_org['segments']:
+            if (segment['id'] not in self.segments_order.keys()):
+                while c_len in pims.keys():
+                    c_len += 1
+                pims[c_len] = {"segment0": [' '.join(text for text in segment['originalText']), segment['startTime'], segment['spokenBy'], segment['id']]}
+
         inverse_dangling_pims = []
         pims_keys = list(pims.keys())
         i = 0
@@ -542,14 +564,14 @@ class community_detection():
         
         for index, p in enumerate(pims.keys()):
             for seg in pims[p].keys():
-                # pims[p][seg][0] = [' '.join(text for text in segment['originalText']) for segment in self.segments_list if segment['id'] == pims[p][seg][3]]
-                pims[p][seg][0] = [segment['originalText'] for segment in self.segments_org["segments"] if segment['id'] == pims[p][seg][3]]
-                if (pims[p].keys())!=1:
-                    inverse_dangling_pims.append(pims[p][seg][3])
+                    # pims[p][seg][0] = [' '.join(text for text in segment['originalText']) for segment in self.segments_list if segment['id'] == pims[p][seg][3]]
+                    pims[p][seg][0] = [segment['originalText'] for segment in self.segments_org["segments"] if segment['id'] == pims[p][seg][3]]
+                    if (pims[p].keys())!=1:
+                        inverse_dangling_pims.append(pims[p][seg][3])
 
-        # Add segments which were dangling. 
+#         # Add segments which were dangling. 
 #         c_len = 0
-#         for segment in self.segments_list:
+#         for segment in self.segments_org:
 #             if (segment['id'] not in inverse_dangling_pims):
 #                 while c_len in pims.keys():
 #                     c_len += 1
@@ -560,38 +582,47 @@ class community_detection():
             if (segmentid not in inverse_dangling_pims):
                 order = self.segments_order[segmentid]
                 for pim in pims.keys():
-                    print(self.segments_order[pims[pim]['segment' + str(len(pims[pim].values()) - 1)][-1]], order - 1)
-                    if self.segments_order[pims[pim]['segment' + str(len(pims[pim].values()) - 1)][-1]] == (order - 1 or order -2 ):
-                        print ("appending extra segment based on order: ", self.segments_map[segmentid], pim )
-                        pims[pim]['segment' + str(len(pims[pim].values()))] = (self.segments_map[segmentid]['originalText'], self.segments_map[segmentid]['spokenBy'], self.segments_map[segmentid]['startTime'], self.segments_map[segmentid]['id'])
-                        break
-                        
+                    if len(pims[pim].keys())!=1:
+                        print(self.segments_order[pims[pim]['segment' + str(len(pims[pim].values()) - 1)][-1]], order - 1)
+                        if self.segments_order[pims[pim]['segment' + str(len(pims[pim].values()) - 1)][-1]] == (order - 1 or order -2 ):
+                            print ("appending extra segment based on order: ", self.segments_map[segmentid], pim )
+                            pims[pim]['segment' + str(len(pims[pim].values()))] = (self.segments_map[segmentid]['originalText'], self.segments_map[segmentid]['spokenBy'], self.segments_map[segmentid]['startTime'], self.segments_map[segmentid]['id'])
+                            break
+        
+        
                         
         # Remove Redundent PIMs in a group and also for single segment as a topic accept it as a topic only if it has duration greater than 30 sec.
-        new_pim = {}
-        track_single_seg = []
+#         new_pim = {}
+#         track_single_seg = []
+#         for pim in list(pims.keys()):
+#             if len(pims[pim]) == 1:
+#                 if self.segments_map[pims[pim]["segment0"][3]]["duration"]>40:
+#                     if pims[pim]["segment0"][3] in track_single_seg:
+#                         continue
+#                     track_single_seg.append(pims[pim]["segment0"][3])
+#                     pass
+#                 else:
+#                     continue
+#             seen = []
+#             new_pim[pim] = {}
+#             index = 0
+#             for seg in list(pims[pim]):
+#                 if pims[pim][seg][3] in seen:
+#                     pass
+#                 else:
+#                     new_pim[pim]['segment' + str(index)] = {}
+#                     new_pim[pim]['segment' + str(index)] = pims[pim][seg]
+#                     index += 1
+#                     seen.append(pims[pim][seg][3])
+
+        # remove dangling groups which has less than 30 sec of duration
+        index = 0
         for pim in list(pims.keys()):
             if len(pims[pim]) == 1:
-                if self.segments_map[pims[pim]["segment0"][3]]["duration"]>40:
-                    if pims[pim]["segment0"][3] in track_single_seg:
-                        continue
-                    track_single_seg.append(pims[pim]["segment0"][3])
-                    pass
-                else:
-                    continue
-            seen = []
-            new_pim[pim] = {}
-            index = 0
-            for seg in list(pims[pim]):
-                if pims[pim][seg][3] in seen:
-                    pass
-                else:
-                    new_pim[pim]['segment' + str(index)] = {}
-                    new_pim[pim]['segment' + str(index)] = pims[pim][seg]
-                    index += 1
-                    seen.append(pims[pim][seg][3])
-
-        return new_pim
+                if len(self.segments_map[pims[pim]["segment0"][-1]]["originalText"].split(" "))<120:
+                    del pims[pim]
+        return pims
+    
     def order_groups_by_score(self, pims, fv_mapped_score):
         new_pims = {}
         group_score_mapping = {}
@@ -613,10 +644,13 @@ class community_detection():
         return new_pims
 
     def h_communities(self, h_flag = False):
-        fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt()
-        _ = self.remove_preprocessed_segments(graph_list)
+        fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=False)
+        #_ = self.remove_preprocessed_segments(graph_list)
         meeting_graph, yetto_prune = self.construct_graph(fv, graph_list)
-        v = 0
+        import pickle
+        with open("meeting_graph", "wb") as f:
+            pickle.dump([meeting_graph.nodes(data=True), meeting_graph.edges(data=True), graph_list], f)
+        v = 75
         edge_count = meeting_graph.number_of_edges()
         meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
         community_set = community.best_partition(meeting_graph_pruned)
@@ -709,7 +743,7 @@ class community_detection():
             community_timerange = self.refine_community(community_set_collection, graph_list)
             # print (community_timerange)
             # logger.info("commnity timerange", extra={"timerange": community_timerange})
-            _ = self.remove_preprocessed_segments(graph_list)
+            # _ = self.remove_preprocessed_segments(graph_list)
             pims = self.group_community_by_time(community_timerange)
             pims = self.wrap_community_by_time_refined(pims)
             pims = self.order_groups_by_score(pims, fv_mapped_score)
@@ -719,7 +753,7 @@ class community_detection():
     def get_communities(self):
         fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt()
         meeting_graph, yetto_prune = self.construct_graph(fv, graph_list)
-        v = 75
+        v = 0
         edge_count = meeting_graph.number_of_edges()
         meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
         community_set = community.best_partition(meeting_graph_pruned)
@@ -778,3 +812,5 @@ class community_detection():
         pims = self.wrap_community_by_time_refined(pims)
         logger.info("Final PIMs", extra={"PIMs": pims})
         return pims
+
+

@@ -20,13 +20,93 @@ import iso8601
 from datetime import datetime
 from copy import deepcopy
 import json
+import string
+import itertools
 
+
+# +
+from nltk.corpus import stopwords
+stop_words = stopwords.words("english")
+def st_get_candidate_phrases(text, pos_search_pattern_list=[r"""base: {(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}"""]):
+        punct = set(string.punctuation)
+        all_chunks = []
+
+        for pattern in pos_search_pattern_list:
+            all_chunks+=st_getregexChunks(text,pattern)
+
+        candidates_tokens = [' '.join(word for word, pos, 
+                    chunk in group).lower() 
+                    for key, group in itertools.groupby(all_chunks, 
+                    lambda_unpack(lambda word, pos, chunk: chunk != 'O')) if key]
+
+        candidate_phrases = [cand for cand in candidates_tokens if cand not in stop_words and not all(char in punct for char in cand)]
+
+        return candidate_phrases
+    
+def st_getregexChunks(text,grammar):
+
+    chunker = nltk.chunk.regexp.RegexpParser(grammar)
+    tagged_sents = nltk.pos_tag_sents(nltk.word_tokenize(sent) for sent in nltk.sent_tokenize(text))
+    all_chunks = list(itertools.chain.from_iterable(nltk.chunk.tree2conlltags(chunker.parse(tagged_sent))
+                                                    for tagged_sent in tagged_sents))
+    #print(grammar)
+    #print(all_chunks)
+    #print()
+
+    return all_chunks
+
+def lambda_unpack(f):
+    return lambda args: f(*args)
+
+def get_filtered_pos(filtered, pos_list=['NN', 'JJ']):
+    filtered_list_temp = []
+    filtered_list = []
+    flag = False
+    flag_JJ = False
+    for word, pos in filtered:
+        if pos == 'NN' or pos == 'JJ':
+            flag=True
+            if pos == 'JJ':
+                flag_JJ = True
+            else:
+                flag_JJ = False
+            filtered_list_temp.append((word, pos))
+            continue
+        if flag:
+            if 'NN' in list(map(lambda x: x[1], filtered_list_temp)):
+                if not flag_JJ:
+                    filtered_list.append(list(map(lambda x:x[0], filtered_list_temp)))
+                else:
+                    filtered_list.append(list(map(lambda x:x[0], filtered_list_temp))[:-1])
+                    #print (filtered_list_temp)
+                    #print (filtered_list[-1])
+                    flag_JJ = False
+            filtered_list_temp = []
+            flag=False
+            
+    return filtered_list
+# -
 
 def preprocess_text(text):
     mod_texts_unfiltered = tp.preprocess(text, stop_words=False, remove_punct=False)
     mod_texts = []
-
+    
     for index, sent in enumerate(mod_texts_unfiltered):
+        
+        #pos_tagged_sent = tp.preprocess(sent, stop_words=False, pos=True)[1][0]
+        #filtered_list = get_filtered_pos(pos_tagged_sent)
+        filtered_list = st_get_candidate_phrases(sent)
+        if len(filtered_list)==0:
+            print (sent)
+            continue
+            
+        flag = False
+        for kp in filtered_list:
+            if len(kp.split(" "))>1:
+                flag = True
+        if not flag:
+            continue
+            
         if len(sent.split(' ')) > 250:
             length = len(sent.split(' '))
             split1 = ' '.join([i for i in sent.split(' ')[:round(length / 2)]])
@@ -35,11 +115,11 @@ def preprocess_text(text):
             mod_texts.append(split2)
             continue
         
-        if len(sent.split(' ')) <= 6:
+        if len(sent.split(' ')) <= 4:
                 continue
 
         mod_texts.append(sent)
-    if len(mod_texts) == 1:
+    if len(mod_texts) <=0:
         return ""
     return mod_texts
 

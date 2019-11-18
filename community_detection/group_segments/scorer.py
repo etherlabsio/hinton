@@ -32,6 +32,7 @@ s3 = boto3.resource('s3')
 
 
 # +
+
 def cosine(vec1, vec2):
     return dot(vec1, vec2) / (norm(vec1) * norm(vec2))
 
@@ -106,6 +107,42 @@ def get_feature_vector(input_list, lambda_function, mind_f):
         else:
             logger.error("Invalid response from  mind service")
             # logger.error("computing feature vector", extra={"msg": "Invalid response from  mind service"})
+    return feature_vector, mind_score
+
+def get_feature_vector_local(input_list, lambda_function, mind_f, gpt_model):
+    # logger.info("computing feature vector", extra={"msg": "getting feature vector from mind service"})
+    feats = list(mind_f['feature_vector'].values())
+    mind_f = np.array(feats).reshape(len(feats), -1)
+    batches_count = 300
+    feature_vector = []
+    mind_score = []
+    count = math.ceil(len(input_list)/batches_count)
+    logger.info("computing in batches", extra={"batches count": count, "number of sentences": len(input_list)})
+    for itr in range(count):
+        extra_input = deepcopy(input_list[itr*batches_count:(itr+1)*batches_count])
+        logger.info("getting feature vector", extra={"iteration count:": itr})
+        temp_vector = []
+        for sent in extra_input:
+            temp_vector.append(gpt_model.get_text_feats(sent))
+        temp_vector = np.array(temp_vector)
+        
+        feature_vector.extend(temp_vector)
+            
+        logger.info("Request Sent", extra={"iteration count": itr})
+
+        #temp_vector = np.array(data['sent_feats'][0])
+        #feature_vector.extend(data['sent_feats'][0])
+
+        batch_size = min(10, temp_vector.shape[0])
+        for i in range(0, temp_vector.shape[0],batch_size):
+            mind_vec = np.expand_dims(np.array(mind_f),2)
+            sent_vec = temp_vector[i:i+batch_size]
+
+            cluster_scores = getClusterScore(mind_vec,sent_vec)
+
+            batch_scores = cluster_scores.max(1)
+            mind_score.extend(batch_scores)
+
     return feature_vector, mind_score
 
 # -
