@@ -13,8 +13,7 @@
 # ---
 
 # +
-
-from scipy.spatial.distance import cityblock
+#from scipy.spatial.distance import cityblock
 import copy
 import numpy as np
 import json
@@ -35,11 +34,11 @@ import logging
 from log.logger import setup_server_logger
 logger = logging.getLogger()
 
-#sys.path.append("/home/arjun/BERT_Similarity_experiments/code/")
-#import gpt_feat_utils
-
-#gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+sim_ep3/", device="cuda")
-#gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+nsp_sim_ep3/", device="cuda")
+# #sys.path.append("/home/arjun/BERT_Similarity_experiments/code/")
+# #import gpt_feat_utils
+#
+# #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+sim_ep3/", device="cuda")
+# #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+nsp_sim_ep3/", device="cuda")
 # -
 
 
@@ -64,6 +63,7 @@ class community_detection():
         self.mind_features = mind_f
         self.compute_fv = compute_fv
         self.mind_id = Request.mind_id
+        print ("Using ", self.mind_id, " for feature extraction")
         self.context_id = Request.context_id
         self.instance_id = Request.instance_id
 
@@ -220,23 +220,69 @@ class community_detection():
 #                     yetto_prune.append((nodea, nodeb, c_weight))
 
         logger.info("Normalising the Graph", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
-        # Y = nx.adjacency_matrix(meeting_graph).toarray()
         X = nx.to_numpy_array(meeting_graph)
-        
+
         for i in range(len(X)):
-            X[i][i]=X[i].mean() 
-        norm_mat = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
-        
+            X[i][i] = X[i].mean()
+
+        norm_mat = (X - X.min(axis=1)) / (X.max(axis=1) - X.min(axis=1))
+        norm_mat = (np.transpose(np.tril(norm_mat)) + np.triu(norm_mat)) / 2
+        norm_mat = norm_mat + np.transpose(norm_mat)
+
         meeting_graph = nx.from_numpy_array(norm_mat)
         logger.info("Completed Normalization", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
-        meeting_graph.remove_edges_from(list(map(lambda x: (x,x), range(meeting_graph.number_of_nodes()))))
+        #meeting_graph.remove_edges_from(list(map(lambda x: (x,x), range(meeting_graph.number_of_nodes()))))
+        
+        for index in range(meeting_graph.number_of_nodes()):
+            meeting_graph[index][index]["weight"] = 1
+    
         logger.info("Completed Normalization and after removing diagonal values", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
         for i,(nodea,nodeb,score) in enumerate(yetto_prune):
-            if nodeb > nodea:
-                yetto_prune[i] = (nodea,nodeb,norm_mat[nodea,nodeb])
+            yetto_prune[i] = (nodea, nodeb, meeting_graph[nodea][nodeb]["weight"])
             
+#         for node in list(meeting_graph.nodes()):
+#             meeting_graph.nodes[node]["text"] = graph_list[node][0]
+#             meeting_graph.nodes[node]["tag"] = self.segments_map[graph_list[node][-1]]["tag"]
         return meeting_graph, yetto_prune
     
+    def construct_graph_ns(self, fv, graph_list):
+        meeting_graph = nx.Graph()
+        yetto_prune = []
+        c_weight = 0
+        for nodea in graph_list.keys():
+            for nodeb in graph_list.keys():
+                if self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]] in [ 0, 1, 2]:
+                    #c_weight +=  -gpt_model.get_feat_sim(fv[nodea], fv[nodeb])
+                    c_weight = cosine(fv[nodea], fv[nodeb])
+                    meeting_graph.add_edge(nodea, nodeb, weight=c_weight)
+                    yetto_prune.append((nodea, nodeb, c_weight))
+
+        logger.info("Normalising the Graph", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
+        
+        X = nx.to_numpy_array(meeting_graph)
+
+        for i in range(len(X)):
+            X[i][i] = X[i].mean()
+
+        norm_mat = (X - X.min(axis=1)) / (X.max(axis=1) - X.min(axis=1))
+        norm_mat = (np.transpose(np.tril(norm_mat)) + np.triu(norm_mat)) / 2
+        norm_mat = norm_mat + np.transpose(norm_mat)
+
+        meeting_graph = nx.from_numpy_array(norm_mat)
+        logger.info("Completed Normalization", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
+        
+        for index in range(meeting_graph.number_of_nodes()):
+            meeting_graph[index][index]["weight"] = 1
+    
+        logger.info("Completed Normalization and after removing diagonal values", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
+#         for i,(nodea,nodeb,score) in enumerate(yetto_prune):
+#             yetto_prune[i] = (nodea, nodeb, meeting_graph[nodea][nodeb]["weight"])
+        
+        yetto_prune = []
+        for nodea, nodeb, weight in meeting_graph.edges.data():
+            yetto_prune.append((nodea, nodeb, weight["weight"]))
+        return meeting_graph, yetto_prune
+
     def prune_edges_outlier(self, meeting_graph, graph_list, yetto_prune, v):
         meeting_graph_pruned = nx.Graph()
         weights = []
@@ -300,6 +346,7 @@ class community_detection():
         for cluster in clusters:
             print ("cluster =========>")
             for sent in cluster:
+                #print (graph_list[sent[0]][0], "--- ", self.segments_map[graph_list[sent[0]][-1]]["tag"] ," ---")
                 print (graph_list[sent[0]][0])
         # print (clusters)
         for index, cluster in enumerate(clusters):
@@ -384,7 +431,7 @@ class community_detection():
             for (index1, (sent1, time1, user1, id1)), (index2, (sent2, time2, user2, id2)) in zip(enumerate(com[0:]), enumerate(com[1:])):
                 if id1 != id2:
                     # if ((extra_preprocess.format_time(time2, True) - extra_preprocess.format_time(time1, True)).seconds <= 120):
-                    if ((self.segments_order[id2] - self.segments_order[id1]) == (0 or 1 or 2)):
+                    if ((self.segments_order[id2] - self.segments_order[id1]) in [0, 1, 2]):
                         print ("order difference:", (self.segments_order[id2] - self.segments_order[id1]))
                         print ("Relevant sentence: ", sent1 , "   =====   ", sent2)
                         if (not flag):
@@ -397,6 +444,7 @@ class community_detection():
                         flag = True
                     else:
                         print ("Not Relevant sentence: ", sent1 , "   !=   ", sent2)
+                        print ("order difference:", (self.segments_order[id2] - self.segments_order[id1]))
                         if flag is True:
                             index_pim += 1
                             index_segment = 0
@@ -578,16 +626,16 @@ class community_detection():
 #                 pims[c_len] = {"segment0": [' '.join(text for text in segment['originalText']), segment['startTime'], segment['spokenBy'], segment['id']]}
 
         
-        for segmentid in self.segments_order.keys():
-            if (segmentid not in inverse_dangling_pims):
-                order = self.segments_order[segmentid]
-                for pim in pims.keys():
-                    if len(pims[pim].keys())!=1:
-                        print(self.segments_order[pims[pim]['segment' + str(len(pims[pim].values()) - 1)][-1]], order - 1)
-                        if self.segments_order[pims[pim]['segment' + str(len(pims[pim].values()) - 1)][-1]] == (order - 1 or order -2 ):
-                            print ("appending extra segment based on order: ", self.segments_map[segmentid], pim )
-                            pims[pim]['segment' + str(len(pims[pim].values()))] = (self.segments_map[segmentid]['originalText'], self.segments_map[segmentid]['spokenBy'], self.segments_map[segmentid]['startTime'], self.segments_map[segmentid]['id'])
-                            break
+#         for segmentid in self.segments_order.keys():
+#             if (segmentid not in inverse_dangling_pims):
+#                 order = self.segments_order[segmentid]
+#                 for pim in pims.keys():
+#                     if len(pims[pim].keys())!=1:
+#                         print(self.segments_order[pims[pim]['segment' + str(len(pims[pim].values()) - 1)][-1]], order - 1)
+#                         if self.segments_order[pims[pim]['segment' + str(len(pims[pim].values()) - 1)][-1]] in [order - 1, order -2]:
+#                             print ("appending extra segment based on order: ", self.segments_map[segmentid], pim )
+#                             pims[pim]['segment' + str(len(pims[pim].values()))] = (self.segments_map[segmentid]['originalText'], self.segments_map[segmentid]['spokenBy'], self.segments_map[segmentid]['startTime'], self.segments_map[segmentid]['id'])
+#                             break
         
         
                         
@@ -615,12 +663,27 @@ class community_detection():
 #                     index += 1
 #                     seen.append(pims[pim][seg][3])
 
-        # remove dangling groups which has less than 30 sec of duration
+        # Remove Redundent PIMs in a group and also for single segment as a topic accept it as a topic only if the word count is greater than 120.
+        flag = False
+        index = 0
+        for pim in list(pims.keys()):
+            if len(pims[pim]) > 1:
+                flag = True
+        if not flag:
+            return pims
+
         index = 0
         for pim in list(pims.keys()):
             if len(pims[pim]) == 1:
-                if len(self.segments_map[pims[pim]["segment0"][-1]]["originalText"].split(" "))<120:
-                    del pims[pim]
+                # if (
+                #     len(
+                #         self.segments_map[pims[pim]["segment0"][-1]][
+                #             "originalText"
+                #         ].split(" ")
+                #     )
+                #     < 120
+                # ):
+                del pims[pim]
         return pims
     
     def order_groups_by_score(self, pims, fv_mapped_score):
@@ -646,15 +709,27 @@ class community_detection():
     def h_communities(self, h_flag = False):
         fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=False)
         #_ = self.remove_preprocessed_segments(graph_list)
-        meeting_graph, yetto_prune = self.construct_graph(fv, graph_list)
+        meeting_graph, yetto_prune = self.construct_graph_ns(fv, graph_list)
         import pickle
         with open("meeting_graph", "wb") as f:
             pickle.dump([meeting_graph.nodes(data=True), meeting_graph.edges(data=True), graph_list], f)
-        v = 75
+        v = 0
         edge_count = meeting_graph.number_of_edges()
         meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
-        community_set = community.best_partition(meeting_graph_pruned)
-        mod = community.modularity(community_set, meeting_graph_pruned)
+        
+        l_mod = 1
+        flag = False
+        community_set = None
+        for itr in range(5):
+            cs = community.best_partition(meeting_graph_pruned, resolution=0.9)
+            mod = community.modularity(cs, meeting_graph_pruned)
+            if mod<l_mod:
+                l_mod = mod
+                community_set = cs
+                flag = True
+                
+        if not flag:
+            community_set = cs
         logger.info("Meeting Graph results", extra={"edges before prunning": edge_count, "edges after prunning": meeting_graph_pruned.number_of_edges(), "modularity": mod})    
         community_set_sorted = sorted(community_set.items(), key=lambda kv: kv[1], reverse=False)
         clusters = []
@@ -751,11 +826,15 @@ class community_detection():
         return pims
 
     def get_communities(self):
-        fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt()
+        fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=False)
         meeting_graph, yetto_prune = self.construct_graph(fv, graph_list)
         v = 0
         edge_count = meeting_graph.number_of_edges()
         meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
+        #nx.write_gexf(meeting_graph, "meeting_graph.gexf")
+        import pickle
+        with open("meeting_graph", "wb") as f:
+            pickle.dump([meeting_graph_pruned.nodes(data=True), meeting_graph_pruned.edges(data=True), graph_list], f)
         community_set = community.best_partition(meeting_graph_pruned)
         mod = community.modularity(community_set, meeting_graph_pruned)
         logger.info("Meeting Graph results", extra={"edges before prunning": edge_count, "edges after prunning": meeting_graph_pruned.number_of_edges(), "modularity": mod})    
@@ -770,33 +849,30 @@ class community_detection():
 
     def get_communities_prune(self):
         print("Computing Community w.r.t pruning using modularity")
-        fv, graph_list = self.compute_feature_vector_gpt()
+        fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=False)
         meeting_graph, yetto_prune = self.construct_graph(fv, graph_list)
         max_mod = 0
         min_mod = 1
-        for v in [0.15, 0.1, 0.05, 0.04, 0.03, 0.02, 0.01]:
-            # flag = False
-            for count in range(5):
-                meeting_graph_pruned = self.prune_edges(meeting_graph, graph_list, yetto_prune, v)
-                community_set = community.best_partition(meeting_graph_pruned)
-                mod = community.modularity(community_set, meeting_graph_pruned)
-                logger.info("Meeting Graph results", extra={"edges before prunning": meeting_graph.number_of_edges(), "edges after prunning": meeting_graph_pruned.number_of_edges(), "modularity ": mod})
-                # if mod>0.3:
-                #     flag = True
-                #     break
-                # if mod==0:
-                #     meeting_graph_pruned = self.prune_edges(meeting_graph, graph_list, yetto_prune, 0.15)
-                #     flag = True
-                #     break
-                if mod > max_mod and mod <= 0.40:
-                    max_meeting_grap_pruned = meeting_graph_pruned
-                    max_community_set = community_set
-                    max_mod = mod
-                    flag = True
-                    # if flag:
-                    #     break
-                if mod < min_mod:
-                    min_mod = mod
+        v = 50
+        while True:
+            meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
+            community_set = community.best_partition(meeting_graph_pruned)
+            mod = community.modularity(community_set, meeting_graph_pruned)
+            logger.info("Meeting Graph results", extra={"edges before prunning": meeting_graph.number_of_edges(), "edges after prunning": meeting_graph_pruned.number_of_edges(), "modularity ": mod})
+            if mod > max_mod and mod <= 0.40:
+                max_meeting_grap_pruned = meeting_graph_pruned
+                max_community_set = community_set
+                max_mod = mod
+                flag = True
+            elif mod > 0.40 and not flag:
+                max_meeting_grap_pruned = meeting_graph_pruned
+                max_community_set = community_set
+                break
+            elif mod > 0.40:
+                break
+            if mod < min_mod:
+                min_mod = mod
+            v +=1
         meeting_graph_pruned = max_meeting_grap_pruned
         community_set = max_community_set
         if flag:
@@ -805,11 +881,15 @@ class community_detection():
             mod = min_mod
 
         logger.info("Meeting Graph results", extra={"edges before prunning": meeting_graph.number_of_edges(), "edges after prunning": meeting_graph_pruned.number_of_edges(), "modularity": mod})
-        community_set_sorted = self.compute_louvian_community(meeting_graph_pruned, community_set)
+        community_set_sorted = sorted(community_set.items(), key=lambda kv: kv[1], reverse=False)
+        # nx.write_gexf(meeting_graph_pruned, "meeting_graph_pruned.gexf")
+        import pickle
+        with open("meeting_graph", "wb") as f:
+            pickle.dump([meeting_graph_pruned.nodes(data=True), meeting_graph_pruned.edges(data=True), graph_list], f)
         community_timerange = self.refine_community(community_set_sorted, graph_list)
-        # logger.info("commnity timerange", extra={"timerange": community_timerange})
         pims = self.group_community_by_time(community_timerange)
         pims = self.wrap_community_by_time_refined(pims)
+        pims = self.order_groups_by_score(pims, fv_mapped_score)
         logger.info("Final PIMs", extra={"PIMs": pims})
         return pims
 

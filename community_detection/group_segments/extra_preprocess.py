@@ -7,13 +7,13 @@
 #       format_version: '1.3'
 #       jupytext_version: 0.8.6
 #   kernelspec:
-#     display_name: Python 3
-#     language: python
-#     name: python3
+#     display_name: sri_gpt
+#     language: python3
+#     name: sri_gpt
 # ---
 
 import sys
-sys.path.append("../../../ai-engine/pkg/")
+sys.path.append("../../../ai-engine_temp/pkg/")
 import text_preprocessing.preprocess as tp
 import nltk
 import iso8601
@@ -27,7 +27,8 @@ import itertools
 # +
 from nltk.corpus import stopwords
 stop_words = stopwords.words("english")
-def st_get_candidate_phrases(text, pos_search_pattern_list=[r"""base: {(<JJ.*>*<NN.*>+<IN>)?<JJ>*<NN.*>+}"""]):
+def st_get_candidate_phrases(text, pos_search_pattern_list=[r"""base: {<(CD)|(DT)|(JJR)>* (<VB.>*)( (<NN>+ <NN>+)|((<JJ>|<NN>) <NN>)| ((<JJ>|<NN>)+|((<JJ>|<NN>)* (<NN> <NN.>)? (<JJ>|<NN>)*) <NN.>))}"""]
+):
         punct = set(string.punctuation)
         all_chunks = []
 
@@ -40,7 +41,7 @@ def st_get_candidate_phrases(text, pos_search_pattern_list=[r"""base: {(<JJ.*>*<
                     lambda_unpack(lambda word, pos, chunk: chunk != 'O')) if key]
 
         candidate_phrases = [cand for cand in candidates_tokens if cand not in stop_words and not all(char in punct for char in cand)]
-
+        print (candidate_phrases)
         return candidate_phrases
     
 def st_getregexChunks(text,grammar):
@@ -90,37 +91,38 @@ def get_filtered_pos(filtered, pos_list=['NN', 'JJ']):
 def preprocess_text(text):
     mod_texts_unfiltered = tp.preprocess(text, stop_words=False, remove_punct=False)
     mod_texts = []
-    
-    for index, sent in enumerate(mod_texts_unfiltered):
-        
-        #pos_tagged_sent = tp.preprocess(sent, stop_words=False, pos=True)[1][0]
-        #filtered_list = get_filtered_pos(pos_tagged_sent)
-        filtered_list = st_get_candidate_phrases(sent)
-        if len(filtered_list)==0:
-            print (sent)
-            continue
-            
-        flag = False
-        for kp in filtered_list:
-            if len(kp.split(" "))>1:
-                flag = True
-        if not flag:
-            continue
-            
-        if len(sent.split(' ')) > 250:
-            length = len(sent.split(' '))
-            split1 = ' '.join([i for i in sent.split(' ')[:round(length / 2)]])
-            split2 = ' '.join([i for i in sent.split(' ')[round(length / 2):]])
-            mod_texts.append(split1)
-            mod_texts.append(split2)
-            continue
-        
-        if len(sent.split(' ')) <= 4:
+    if mod_texts_unfiltered is not None:
+        for index, sent in enumerate(mod_texts_unfiltered):
+
+            #pos_tagged_sent = tp.preprocess(sent, stop_words=False, pos=True)[1][0]
+            #filtered_list = get_filtered_pos(pos_tagged_sent)
+            filtered_list = st_get_candidate_phrases(sent)
+            if len(filtered_list)==0:
+                continue
+            elif True not in list(map(lambda x: len(x.split(' '))>1, filtered_list)):
+#                 if len(filtered_list)>3:
+#                     pass
+#                 else:
+#                     continue
                 continue
 
-        mod_texts.append(sent)
-    if len(mod_texts) <=0:
+            if len(sent.split(' ')) > 250:
+                length = len(sent.split(' '))
+                split1 = ' '.join([i for i in sent.split(' ')[:round(length / 2)]])
+                split2 = ' '.join([i for i in sent.split(' ')[round(length / 2):]])
+                mod_texts.append(split1)
+                mod_texts.append(split2)
+                continue
+
+            if len(sent.split(' ')) <= 4:
+                    continue
+
+            mod_texts.append(sent)
+        if len(mod_texts) <=1:
+            return ""
+    else:
         return ""
+    
     return mod_texts
 
 

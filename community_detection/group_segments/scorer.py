@@ -47,6 +47,8 @@ def getClusterScore(mind_vec, sent_vec):
 
 # +
 
+
+
 def get_mind_score(segment_fv, mind_dict):
     feats = list(mind_dict['feature_vector'].values())
     mind_vector = np.array(feats).reshape(len(feats), -1)

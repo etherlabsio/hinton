@@ -21,8 +21,7 @@ def get_groups(segments, model1, mind_dict):
     community_extraction = grouper_segments.community_detection(segments, model1, mind_dict)
     #pims = community_extraction.get_communities()
     pims = community_extraction.h_communities()
-    #print("computing groups")
-    # pims = community_extraction.get_communities_prune()
+    #pims = community_extraction.get_communities_prune()
     topics = get_topics(pims)
 
     return topics, pims

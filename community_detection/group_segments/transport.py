@@ -63,6 +63,7 @@ def decode_json_request(req) -> Request:
         if ele['originalText'] != "":
             segments_order[ele['id']] = index
             index+=1
-    
+    #for segid in segments_order.keys():
+    #    print ("segment: ", segments_map[segid]["originalText"], "\n\n")
     return Request(req['mindId'],req['instanceId'],req['contextId'],segments, segments_org, segments_map, segments_order)
 
