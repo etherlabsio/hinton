@@ -187,7 +187,7 @@ class community_detection():
                     index += 1
         return fv, graph_list
 
-    def construct_graph_old(self, fv, graph_list):
+    def construct_graph_vanilla(self, fv, graph_list):
         meeting_graph = nx.Graph()
         yetto_prune = []
         c_weight = 0
@@ -251,36 +251,36 @@ class community_detection():
         c_weight = 0
         for nodea in graph_list.keys():
             for nodeb in graph_list.keys():
-                if self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]] in [ 0, 1, 2]:
+                if ((self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]]) in [0, 1]):
                     #c_weight +=  -gpt_model.get_feat_sim(fv[nodea], fv[nodeb])
                     c_weight = cosine(fv[nodea], fv[nodeb])
                     meeting_graph.add_edge(nodea, nodeb, weight=c_weight)
                     yetto_prune.append((nodea, nodeb, c_weight))
 
-        logger.info("Normalising the Graph", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
+#         logger.info("Normalising the Graph", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
         
-        X = nx.to_numpy_array(meeting_graph)
+#         X = nx.to_numpy_array(meeting_graph)
 
-        for i in range(len(X)):
-            X[i][i] = X[i].mean()
+#         for i in range(len(X)):
+#             X[i][i] = X[i].mean()
 
-        norm_mat = (X - X.min(axis=1)) / (X.max(axis=1) - X.min(axis=1))
-        norm_mat = (np.transpose(np.tril(norm_mat)) + np.triu(norm_mat)) / 2
-        norm_mat = norm_mat + np.transpose(norm_mat)
+#         norm_mat = (X - X.min(axis=1)) / (X.max(axis=1) - X.min(axis=1))
+#         norm_mat = (np.transpose(np.tril(norm_mat)) + np.triu(norm_mat)) / 2
+#         norm_mat = norm_mat + np.transpose(norm_mat)
 
-        meeting_graph = nx.from_numpy_array(norm_mat)
-        logger.info("Completed Normalization", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
+#         meeting_graph = nx.from_numpy_array(norm_mat)
+#         logger.info("Completed Normalization", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
         
-        for index in range(meeting_graph.number_of_nodes()):
-            meeting_graph[index][index]["weight"] = 1
+#         for index in range(meeting_graph.number_of_nodes()):
+#             meeting_graph[index][index]["weight"] = 1
     
-        logger.info("Completed Normalization and after removing diagonal values", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
-#         for i,(nodea,nodeb,score) in enumerate(yetto_prune):
-#             yetto_prune[i] = (nodea, nodeb, meeting_graph[nodea][nodeb]["weight"])
+#         logger.info("Completed Normalization and after removing diagonal values", extra={"nodes: ":meeting_graph.number_of_nodes(), "edges: ": meeting_graph.number_of_edges()})
+# #         for i,(nodea,nodeb,score) in enumerate(yetto_prune):
+# #             yetto_prune[i] = (nodea, nodeb, meeting_graph[nodea][nodeb]["weight"])
         
-        yetto_prune = []
-        for nodea, nodeb, weight in meeting_graph.edges.data():
-            yetto_prune.append((nodea, nodeb, weight["weight"]))
+#         yetto_prune = []
+#         for nodea, nodeb, weight in meeting_graph.edges.data():
+#             yetto_prune.append((nodea, nodeb, weight["weight"]))
         return meeting_graph, yetto_prune
 
     def prune_edges_outlier(self, meeting_graph, graph_list, yetto_prune, v):
@@ -431,7 +431,7 @@ class community_detection():
             for (index1, (sent1, time1, user1, id1)), (index2, (sent2, time2, user2, id2)) in zip(enumerate(com[0:]), enumerate(com[1:])):
                 if id1 != id2:
                     # if ((extra_preprocess.format_time(time2, True) - extra_preprocess.format_time(time1, True)).seconds <= 120):
-                    if ((self.segments_order[id2] - self.segments_order[id1]) in [0, 1, 2]):
+                    if ((self.segments_order[id2] - self.segments_order[id1]) in [0, 1]):
                         print ("order difference:", (self.segments_order[id2] - self.segments_order[id1]))
                         print ("Relevant sentence: ", sent1 , "   =====   ", sent2)
                         if (not flag):

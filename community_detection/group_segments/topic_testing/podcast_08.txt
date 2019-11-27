@@ -20,7 +20,8 @@
                 "createdAt": "2019-10-08T12:11:52.17910052Z",
                 "updatedAt": "2019-10-08T12:12:43.082891659Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 0
             },
             {
                 "id": "965884b7479943de8c41e06dd5848e91",
@@ -38,7 +39,8 @@
                 "createdAt": "2019-10-08T11:58:56.55279886Z",
                 "updatedAt": "2019-10-08T12:01:24.034884425Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 1
             },
             {
                 "id": "9436313fae9f492181c15236a57fecbe",
@@ -56,7 +58,8 @@
                 "createdAt": "2019-10-08T12:19:04.522875106Z",
                 "updatedAt": "2019-10-08T12:19:07.77621186Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 2
             },
             {
                 "id": "5b91268c16124cce9503e79dbf2b0c67",
@@ -74,7 +77,8 @@
                 "createdAt": "2019-10-08T12:05:38.089581743Z",
                 "updatedAt": "2019-10-08T12:05:42.291838611Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 1
             },
             {
                 "id": "6e4f96747ba043f4969be8c1eaf7e769",
@@ -92,7 +96,8 @@
                 "createdAt": "2019-10-08T12:10:52.765103669Z",
                 "updatedAt": "2019-10-08T12:12:03.819131665Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 3
             },
             {
                 "id": "0955fe94c7434f31bf7e611b3be24571",
@@ -110,7 +115,8 @@
                 "createdAt": "2019-10-08T12:24:42.274272173Z",
                 "updatedAt": "2019-10-08T12:24:45.839603404Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 4
             },
             {
                 "id": "517fb672100248ebb33ed6ecec584793",
@@ -128,7 +134,8 @@
                 "createdAt": "2019-10-08T12:27:12.345679489Z",
                 "updatedAt": "2019-10-08T12:27:15.190008474Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 4
             },
             {
                 "id": "b6af80225793491d9069932d55f13187",
@@ -146,7 +153,8 @@
                 "createdAt": "2019-10-08T12:02:56.39636292Z",
                 "updatedAt": "2019-10-08T12:04:37.75538289Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 1
             },
             {
                 "id": "ef03b6f392f347cc97ad4191cd93d4be",
@@ -164,7 +172,8 @@
                 "createdAt": "2019-10-08T12:00:56.07160228Z",
                 "updatedAt": "2019-10-08T12:02:27.350787818Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 1
             },
             {
                 "id": "6de971afbabc4553b3b5786c92644569",
@@ -182,7 +191,8 @@
                 "createdAt": "2019-10-08T12:15:03.506013998Z",
                 "updatedAt": "2019-10-08T12:15:07.333324048Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 0
             },
             {
                 "id": "8accaf0fa59e4275964d177c1241680f",
@@ -200,7 +210,8 @@
                 "createdAt": "2019-10-08T12:04:56.795546695Z",
                 "updatedAt": "2019-10-08T12:06:22.973869286Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 1
             },
             {
                 "id": "f58ed86aa8924ecdbbb6698860479bb9",
@@ -218,7 +229,8 @@
                 "createdAt": "2019-10-08T12:14:25.074873012Z",
                 "updatedAt": "2019-10-08T12:14:28.039068517Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 0
             },
             {
                 "id": "4f75b27f874c4ca3a42abf354c915290",
@@ -236,7 +248,8 @@
                 "createdAt": "2019-10-08T12:11:12.844356834Z",
                 "updatedAt": "2019-10-08T12:12:08.727462125Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 3
             },
             {
                 "id": "93cfe8f2b295485a80fc2d69fd07cb58",
@@ -254,7 +267,8 @@
                 "createdAt": "2019-10-08T12:06:50.411068408Z",
                 "updatedAt": "2019-10-08T12:07:46.579698633Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 3
             },
             {
                 "id": "9cfaf001a8b34c30a2422d5e5b96754b",
@@ -272,7 +286,8 @@
                 "createdAt": "2019-10-08T12:21:00.658281898Z",
                 "updatedAt": "2019-10-08T12:21:04.409944938Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 2
             },
             {
                 "id": "275a6243ef7d4c77bcdd4bf076769c47",
@@ -290,7 +305,8 @@
                 "createdAt": "2019-10-08T12:27:38.508107981Z",
                 "updatedAt": "2019-10-08T12:27:41.781809723Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 4
             },
             {
                 "id": "06d4cfa410ee47f6ba66ad53dbe41ccf",
@@ -308,7 +324,8 @@
                 "createdAt": "2019-10-08T12:08:53.898979088Z",
                 "updatedAt": "2019-10-08T12:10:10.057819204Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 3
             },
             {
                 "id": "aec501162dad4a65a591dc8c03177974",
@@ -326,7 +343,8 @@
                 "createdAt": "2019-10-08T12:17:00.252607635Z",
                 "updatedAt": "2019-10-08T12:17:03.602351709Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 2
             },
             {
                 "id": "b5a20caa95604539a491eef6a7acada3",
@@ -344,7 +362,8 @@
                 "createdAt": "2019-10-08T12:22:43.998778965Z",
                 "updatedAt": "2019-10-08T12:22:47.390043078Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 2
             },
             {
                 "id": "8e6e0b2a5f6f4bbf92b829c13bc720f9",
@@ -362,7 +381,8 @@
                 "createdAt": "2019-10-08T12:16:19.302669851Z",
                 "updatedAt": "2019-10-08T12:16:22.819481053Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 0
             },
             {
                 "id": "53253cfe8617413ea2b5de48101e1c52",
@@ -380,7 +400,8 @@
                 "createdAt": "2019-10-08T12:12:12.212393889Z",
                 "updatedAt": "2019-10-08T12:12:14.362452328Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 0
             },
             {
                 "id": "b2807ee3c1e9477b9066cfd8e99d6383",
@@ -398,7 +419,8 @@
                 "createdAt": "2019-10-08T12:13:37.159422588Z",
                 "updatedAt": "2019-10-08T12:13:40.623533785Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 0
             },
             {
                 "id": "718c4403bcd14873b458f509007b6a4e",
@@ -416,7 +438,8 @@
                 "createdAt": "2019-10-08T12:18:54.465458432Z",
                 "updatedAt": "2019-10-08T12:18:59.361867225Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 2
             },
             {
                 "id": "0512bcc3fcaa499a8979f9e3840ec705",
@@ -434,7 +457,8 @@
                 "createdAt": "2019-10-08T12:24:24.786635069Z",
                 "updatedAt": "2019-10-08T12:24:28.200080144Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 4
             },
             {
                 "id": "3c33ade92e514abdb065647430da28fc",
@@ -452,7 +476,8 @@
                 "createdAt": "2019-10-08T12:26:43.489017269Z",
                 "updatedAt": "2019-10-08T12:26:47.255910323Z",
                 "deletedAt": null,
-                "deleted": false
+                "deleted": false,
+                "tag": 4
             }
         ]
     }
