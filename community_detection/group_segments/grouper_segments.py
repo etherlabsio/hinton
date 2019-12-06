@@ -13,13 +13,15 @@
 # ---
 
 # +
+
+
 #from scipy.spatial.distance import cityblock
 import copy
 import numpy as np
 import json
 from copy import deepcopy
 import sys
-sys.path.append("../../../ai-engine/pkg/")
+sys.path.append("../../../ai-engine_temp/pkg/")
 import text_preprocessing.preprocess as tp
 import extra_preprocess
 # from group_segments.extra_preprocess import format_time
@@ -31,14 +33,17 @@ from datetime import datetime
 from scorer import get_feature_vector, get_embeddings, get_feature_vector_local
 from collections import Counter
 import logging
+import numpy as np
 from log.logger import setup_server_logger
 logger = logging.getLogger()
 
-# #sys.path.append("/home/arjun/BERT_Similarity_experiments/code/")
-# #import gpt_feat_utils
+sys.path.append("/home/arjun/BERT_Similarity_experiments/code/")
+from gpt_feat_utils import GPT_Inference
 #
 # #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+sim_ep3/", device="cuda")
 # #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+nsp_sim_ep3/", device="cuda")
+#gpt_model = GPT_Inference("/home/arjun/gpt_experiments/engg_models/se+ether_2+1s_ep5_#2/", device="cuda")
+gpt_model = GPT_Inference("/home/shubham/projects/domain_minds_v2_gpt/se/model/epoch3/", device="cuda")
 # -
 
 
@@ -254,6 +259,7 @@ class community_detection():
                 if ((self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]]) in [0, 1]):
                     #c_weight +=  -gpt_model.get_feat_sim(fv[nodea], fv[nodeb])
                     c_weight = cosine(fv[nodea], fv[nodeb])
+                    #c_weight = np.linalg.norm(np.asarray(fv[nodea]) - np.asarray(fv[nodeb]))
                     meeting_graph.add_edge(nodea, nodeb, weight=c_weight)
                     yetto_prune.append((nodea, nodeb, c_weight))
 
@@ -281,6 +287,93 @@ class community_detection():
 #         yetto_prune = []
 #         for nodea, nodeb, weight in meeting_graph.edges.data():
 #             yetto_prune.append((nodea, nodeb, weight["weight"]))
+        return meeting_graph, yetto_prune
+
+    def construct_graph_ns_max(self, fv, graph_list):
+        meeting_graph = nx.Graph()
+        yetto_prune = []
+        c_weight = 0
+
+        for nodea in graph_list.keys():
+            for nodeb in graph_list.keys():
+                c_weight = cosine(fv[nodea], fv[nodeb])
+                meeting_graph.add_edge(nodea, nodeb, weight=c_weight)
+                yetto_prune.append((nodea, nodeb, c_weight))
+        import statistics
+        max_connection = {}
+        max_score = {}
+        lowest_score = {}
+        #avg_score = {}
+        outlier_score = {}
+        for node in meeting_graph.nodes():
+            closest_connection_n = sorted(dict(meeting_graph[node]).items(), key=lambda kv:kv[1]["weight"], reverse=True)
+            closest_connection = []
+            max_score_current = []
+            lowest_score_current = []
+            for n, score in closest_connection_n:
+                if ((self.segments_order[graph_list[node][-1]] <= self.segments_order[graph_list[n][-1]]) and (self.segments_order[graph_list[n][-1]] - self.segments_order[graph_list[node][-1]] in [0, 1])):
+                    max_score_current.append((n ,score))
+                else:
+                    closest_connection.append((n, score))
+                lowest_score_current.append((n, score))
+            #avg_score[node] = np.mean(list(map(lambda kv: kv[1]["weight"], max_score_current)))
+            #max_score[node] = sorted(max_score_current, key=lambda kv:kv[1]["weight"], reverse=False)[1]
+            lowest_score[node] = sorted(lowest_score_current, key=lambda kv:kv[1]["weight"], reverse=False)[:10]
+            #max_connection[node] = [(n1, score1["weight"]) for (n1, score1) in closest_connection if score1["weight"] > max_score[node][1]["weight"]]
+            max_connection[node] = closest_connection_n
+            weights_n = list(map(lambda kv: (kv[1]["weight"]).tolist(), closest_connection_n))
+            q3 = np.percentile(weights_n, 75)
+            iqr = np.subtract(*np.percentile(weights_n, [75, 25]))
+            outlier_score[node] = {}
+            outlier_score[node]["outlier"] = q3 + 1 * iqr
+            outlier_score[node]["iqr"] = iqr
+            outlier_score[node]["q3"] = q3
+            outlier_score[node]["weights_n"] = closest_connection_n
+            outlier_score[node]["avg+pstd"] = statistics.mean(weights_n)+statistics.pstdev(weights_n)
+
+
+        graph_data = deepcopy(meeting_graph.edges.data())
+        for nodea, nodeb, weight in graph_data:
+            #if nodeb in list(map(lambda kv: kv[0], max_connection[nodea])) or nodeb in list(map(lambda kv: kv[0], lowest_score[nodea])) or ((self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]]) in [0, 1]):
+            #if nodeb in list(map(lambda kv: kv[0], max_connection[nodea])) or nodeb in list(map(lambda kv: kv[0], lowest_score[nodea])):
+            #if weight["weight"]>avg_score[nodea]:
+            #if nodeb in list(map(lambda kv:kv[0], max_connection[nodea])):
+            #if nodeb in list(map(lambda kv:kv[0], max_connection[nodea])) or (((self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]]) in [0])):
+            if weight["weight"] > outlier_score[nodea]["outlier"] or (((self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]]) in [0])):
+                #print (True)
+                #    pass
+                #else:
+                #    print (graph_list[nodea][0], " ==> ", graph_list[nodeb][0])
+                #if nodeb in list(map(lambda kv: kv[0], lowest_score[nodea])):
+                #    print (graph_list[nodea][0], "!==", graph_list[nodeb][0])
+                pass
+            elif (self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]]) in [-1, 1] and weight["weight"] > outlier_score[nodea]["avg+pstd"] :
+                    print (graph_list[nodea], graph_list[nodeb])
+                    pass
+            else:
+                meeting_graph.remove_edge(nodea, nodeb)
+        for nodea, nodeb, weight in graph_data:
+            if (self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]]) in [0]:
+                #meeting_graph[nodea][nodeb]["Weight"] = outlier_score[nodea]["weights_n"][1][1]["weight"]
+                meeting_graph[nodea][nodeb]["Weight"] = 1
+#         X = nx.to_numpy_array(meeting_graph)
+
+#         for i in range(len(X)):
+#             X[i][i] = X[i].mean()
+
+#         norm_mat = (X - X.min(axis=1)) / (X.max(axis=1) - X.min(axis=1))
+#         norm_mat = (np.transpose(np.tril(norm_mat)) + np.triu(norm_mat)) / 2
+#         norm_mat = norm_mat + np.transpose(norm_mat)
+
+#         meeting_graph = nx.from_numpy_array(norm_mat)
+
+#         for index in range(meeting_graph.number_of_nodes()):
+#             meeting_graph[index][index]["weight"] = 1
+
+
+        #import pickle
+        #with open("meeting_graph", "wb") as f:
+        #    pickle.dump([meeting_graph.nodes(data=True), meeting_graph.edges(data=True), graph_list], f)
         return meeting_graph, yetto_prune
 
     def prune_edges_outlier(self, meeting_graph, graph_list, yetto_prune, v):
@@ -344,7 +437,7 @@ class community_detection():
                 temp.append((word, graph_list[word][-1]))
         
         for cluster in clusters:
-            print ("cluster =========>")
+            print ("cluster before alteration=========>")
             for sent in cluster:
                 #print (graph_list[sent[0]][0], "--- ", self.segments_map[graph_list[sent[0]][-1]]["tag"] ," ---")
                 print (graph_list[sent[0]][0])
@@ -361,7 +454,7 @@ class community_detection():
                     seg_max[segid] = (seg_count[segid], index)
         # print (seg_max)
         
-        
+        print ("\n\n\n")
         new_clusters = deepcopy(clusters)
         for index, cluster in enumerate(new_clusters):
             for sent, seg in cluster:
@@ -370,8 +463,8 @@ class community_detection():
                     
         # print (clusters)
         for cluster in clusters:
-            print ("After removing overlapping groups")
-            print ("cluster =========>")
+            print ("\nAfter removing overlapping groups")
+            print ("cluster =========>\n")
             for sent in cluster:
                 print (graph_list[sent[0]][0])
         timerange = []
@@ -386,11 +479,11 @@ class community_detection():
                 temp = list(set(temp))
                 temp = sorted(temp, key=lambda kv: kv[1], reverse=False)
                 timerange.append(temp)
-        print ("Checking Timerange --------------")
+        print ("\n\nChecking Timerange --------------")
         for cls in timerange:
             print ("--------------")
             for sent in cls:
-                print (sent[0])
+                print (sent[0], sent[-1], "\n")
         print ("<---------------->")
         return timerange
 
@@ -429,7 +522,8 @@ class community_detection():
                 continue
 
             for (index1, (sent1, time1, user1, id1)), (index2, (sent2, time2, user2, id2)) in zip(enumerate(com[0:]), enumerate(com[1:])):
-                if id1 != id2:
+                #if id1 = id2:
+                if True:
                     # if ((extra_preprocess.format_time(time2, True) - extra_preprocess.format_time(time1, True)).seconds <= 120):
                     if ((self.segments_order[id2] - self.segments_order[id1]) in [0, 1]):
                         print ("order difference:", (self.segments_order[id2] - self.segments_order[id1]))
@@ -549,12 +643,12 @@ class community_detection():
 
     def wrap_community_by_time_refined(self, pims):
         # Add segments which were dangling. 
-        c_len = 0
-        for segment in self.segments_org['segments']:
-            if (segment['id'] not in self.segments_order.keys()):
-                while c_len in pims.keys():
-                    c_len += 1
-                pims[c_len] = {"segment0": [' '.join(text for text in segment['originalText']), segment['startTime'], segment['spokenBy'], segment['id']]}
+#         c_len = 0
+#         for segment in self.segments_org['segments']:
+#             if (segment['id'] not in self.segments_order.keys()):
+#                 while c_len in pims.keys():
+#                     c_len += 1
+#                 pims[c_len] = {"segment0": [' '.join(text for text in segment['originalText']), segment['startTime'], segment['spokenBy'], segment['id']]}
 
         inverse_dangling_pims = []
         pims_keys = list(pims.keys())
@@ -640,51 +734,45 @@ class community_detection():
         
                         
         # Remove Redundent PIMs in a group and also for single segment as a topic accept it as a topic only if it has duration greater than 30 sec.
-#         new_pim = {}
-#         track_single_seg = []
-#         for pim in list(pims.keys()):
-#             if len(pims[pim]) == 1:
-#                 if self.segments_map[pims[pim]["segment0"][3]]["duration"]>40:
-#                     if pims[pim]["segment0"][3] in track_single_seg:
-#                         continue
-#                     track_single_seg.append(pims[pim]["segment0"][3])
-#                     pass
-#                 else:
-#                     continue
-#             seen = []
-#             new_pim[pim] = {}
-#             index = 0
-#             for seg in list(pims[pim]):
-#                 if pims[pim][seg][3] in seen:
-#                     pass
-#                 else:
-#                     new_pim[pim]['segment' + str(index)] = {}
-#                     new_pim[pim]['segment' + str(index)] = pims[pim][seg]
-#                     index += 1
-#                     seen.append(pims[pim][seg][3])
+        new_pim = {}
+        track_single_seg = []
+        for pim in list(pims.keys()):
+            #if len(pims[pim]) == 1:
+            #    track_single_seg.append(pims[pim]["segment0"][3])
+            seen = []
+            new_pim[pim] = {}
+            index = 0
+            for seg in list(pims[pim]):
+                if pims[pim][seg][3] in seen:
+                    pass
+                else:
+                    new_pim[pim]['segment' + str(index)] = {}
+                    new_pim[pim]['segment' + str(index)] = pims[pim][seg]
+                    index += 1
+                    seen.append(pims[pim][seg][3])
 
         # Remove Redundent PIMs in a group and also for single segment as a topic accept it as a topic only if the word count is greater than 120.
         flag = False
         index = 0
-        for pim in list(pims.keys()):
-            if len(pims[pim]) > 1:
+        for pim in list(new_pim.keys()):
+            if len(new_pim[pim]) > 1:
                 flag = True
         if not flag:
-            return pims
+            return new_pim
 
         index = 0
-        for pim in list(pims.keys()):
-            if len(pims[pim]) == 1:
-                # if (
-                #     len(
-                #         self.segments_map[pims[pim]["segment0"][-1]][
-                #             "originalText"
-                #         ].split(" ")
-                #     )
-                #     < 120
-                # ):
-                del pims[pim]
-        return pims
+        for pim in list(new_pim.keys()):
+            if len(new_pim[pim]) == 1:
+                if (
+                    len(
+                        self.segments_map[new_pim[pim]["segment0"][-1]][
+                            "originalText"
+                        ].split(" ")
+                    )
+                    < 120
+                ):
+                    del new_pim[pim]
+        return new_pim
     
     def order_groups_by_score(self, pims, fv_mapped_score):
         new_pims = {}
@@ -706,14 +794,71 @@ class community_detection():
             index+=1
         return new_pims
 
+    def combine_pims_by_time(self, pims, group_info):
+        print("Before Merging", len(pims.keys()))
+        sorted_pims = sorted(pims.items(), key=lambda kv: kv[1]["segment0"][1], reverse=False)
+        new_pims = {}
+        merge_group = []
+#         for pos, (index, pim) in enumerate(sorted_pims):
+#             for pos1 ,(index1, pim1) in enumerate(sorted_pims):
+#                 if index != index1 and pos1 - pos == 1:
+#                     if self.segments_order[pim["segment" + str(len(pim.keys())-1)][-1]] - self.segments_order[pim1["segment0"][-1]] != -1:
+#                         merge_group.append((index, index1))
+        for pos, (index, pim) in enumerate(sorted_pims):
+            for pos1 ,(index1, pim1) in enumerate(sorted_pims):
+                if index != index1 and pos1 - pos == 1:
+                    if group_info[pim["segment" + str(len(pim.keys())-1)][-1]] == group_info[pim1["segment0"][-1]]:
+                        merge_group.append((index, index1))
+        print (merge_group)
+        for group in [i for j in merge_group for i in j]:
+            print ("\n")
+            print (*[" ".join(i[0]) for i in pims[group].values()], sep="\n")
+        tracking_changes = {}
+        pim_seg = {}
+        for group1, group2 in merge_group:
+            seg_update = []
+            if group1 in tracking_changes.keys():
+                already_appended_group = tracking_changes[group1]
+                for seg in list(pims[group2].values()):
+                    seg_update.append(seg)
+                tracking_changes[group2] = already_appended_group
+                pim_seg[already_appended_group].append(seg_update)
+            else:
+                for seg in list(pims[group1].values()) + list(pims[group2].values()):
+                    seg_update.append(seg)
+                tracking_changes[group2] = group1
+                if group1 in pim_seg.keys():
+                    pim_seg[group1].append(seg_update)
+                else:
+                    pim_seg[group1] = [seg_update]
+
+        for index, (groupno, group) in enumerate(pim_seg.items()):
+            index_n = 0
+            new_pims[index] = {}
+            for seg in [i for j in group for i in j]:
+                new_pims[index]["segment" + str(index_n)] = seg
+                index_n += 1
+        
+        inverse_merge_group = [group for group in pims.keys() if group not in [i for j in merge_group for i in j]]
+        index = len(new_pims)
+        
+        for group in inverse_merge_group:
+            new_pims[index] = pims[group]
+            index +=1
+        print("After Merging", len(new_pims.keys()))
+        return new_pims
+    
     def h_communities(self, h_flag = False):
-        fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=False)
+        fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=True)
         #_ = self.remove_preprocessed_segments(graph_list)
-        meeting_graph, yetto_prune = self.construct_graph_ns(fv, graph_list)
-        import pickle
-        with open("meeting_graph", "wb") as f:
-            pickle.dump([meeting_graph.nodes(data=True), meeting_graph.edges(data=True), graph_list], f)
+        #meeting_graph, yetto_prune = self.construct_graph_ns(fv, graph_list)
+        meeting_graph, yetto_prune = self.construct_graph_ns_max(fv, graph_list)
+        #meeting_graph, yetto_prune = self.construct_graph_vanilla(fv, graph_list)
+        #import pickle
+        #with open("meeting_graph", "wb") as f:
+        #    pickle.dump([meeting_graph.nodes(data=True), meeting_graph.edges(data=True), graph_list], f)
         v = 0
+        t = 1
         edge_count = meeting_graph.number_of_edges()
         meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
         
@@ -721,7 +866,7 @@ class community_detection():
         flag = False
         community_set = None
         for itr in range(5):
-            cs = community.best_partition(meeting_graph_pruned, resolution=0.9)
+            cs = community.best_partition(meeting_graph_pruned, resolution=t)
             mod = community.modularity(cs, meeting_graph_pruned)
             if mod<l_mod:
                 l_mod = mod
@@ -811,6 +956,7 @@ class community_detection():
             # logger.info("commnity timerange", extra={"timerange": community_timerange})
             pims = self.group_community_by_time(community_timerange)
             pims = self.wrap_community_by_time_refined(pims)
+            
             logger.info("Final PIMs", extra={"PIMs": pims})
         else:
             community_set_collection = deepcopy(community_set_sorted)
@@ -822,9 +968,127 @@ class community_detection():
             pims = self.group_community_by_time(community_timerange)
             pims = self.wrap_community_by_time_refined(pims)
             pims = self.order_groups_by_score(pims, fv_mapped_score)
+#             rw = nx.Graph()
+#             for key in pims.keys():
+#                 for segkey in pims[key]:
+#                     rw.add_node(pims[key][segkey][-1], text = pims[key][segkey][0], speaker = pims[key][segkey][2])
+                
+#                 for nodea in rw.nodes.data():
+#                     for nodeb in rw.nodes.data():
+#                         rw.add_edge(nodea, nodeb)
+                        
+#             with open("meeting_graph", "wb") as f:
+#                 pickle.dump([rw.nodes(data=True), rw.edges(data=True)], f)
             logger.info("Final PIMs", extra={"PIMs": pims})
         return pims
+    
+    def construct_graph_para_new(self, meeting_graph):
+        import statistics
+        max_connection = {}
+        max_score = {}
+        outlier_score = {}
+        for node in meeting_graph.nodes():
+            closest_connection_n = sorted(dict(meeting_graph[node]).items(), key=lambda kv:kv[1]["weight"], reverse=True)
+            
+            max_score_current = []
+            weights_n = list(map(lambda kv: (kv[1]["weight"]).tolist(), closest_connection_n))
+            q3 = np.percentile(weights_n, 75)
+            iqr = np.subtract(*np.percentile(weights_n, [75, 25]))
+            outlier_score[node] = {}
+            outlier_score[node]["outlier"] = q3 + 1 * iqr
+            outlier_score[node]["iqr"] = iqr
+            outlier_score[node]["q3"] = q3
+            outlier_score[node]["weights_n"] = closest_connection_n
+            outlier_score[node]["avg+pstd"] = statistics.mean(weights_n)+statistics.pstdev(weights_n)
 
+
+        graph_data = deepcopy(meeting_graph.edges.data())
+        for nodea, nodeb, weight in graph_data:
+            if weight["weight"] > outlier_score[nodea]["outlier"]:
+                pass
+            else:
+                meeting_graph.remove_edge(nodea, nodeb)
+                
+        return meeting_graph
+    
+    def itr_communities(self):
+        fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=True)
+        meeting_graph, yetto_prune = self.construct_graph_ns_max(fv, graph_list)
+        v = 0
+        t = 1
+        edge_count = meeting_graph.number_of_edges()
+        meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
+        
+        l_mod = 1
+        flag = False
+        community_set = None
+        for itr in range(5):
+            cs = community.best_partition(meeting_graph_pruned, resolution=t)
+            mod = community.modularity(cs, meeting_graph_pruned)
+            if mod<l_mod:
+                l_mod = mod
+                community_set = cs
+                flag = True
+                
+        if not flag:
+            community_set = cs
+        logger.info("Meeting Graph results", extra={"edges before prunning": edge_count, "edges after prunning": meeting_graph_pruned.number_of_edges(), "modularity": mod})    
+        community_set_sorted = sorted(community_set.items(), key=lambda kv: kv[1], reverse=False)
+        community_set_collection = deepcopy(community_set_sorted)
+        community_set_collection = sorted(community_set_collection, key = lambda x: x[1], reverse=False)
+        community_timerange = self.refine_community(community_set_collection, graph_list)
+        pims = self.group_community_by_time(community_timerange)
+        pims = self.wrap_community_by_time_refined(pims)
+        pims = self.order_groups_by_score(pims, fv_mapped_score)
+        
+        #pims = self.combine_pims_by_time(pims)
+        #logger.info("Final PIMs", extra={"PIMs": pims})
+        graph_list_index = {}
+        for index, g in enumerate(graph_list.values()):
+            
+            if g[-1] not in graph_list_index.keys():
+                graph_list_index[g[-1]] = [index]
+            else:
+                graph_list_index[g[-1]].append(index)
+        group = []
+        pim_fv = []
+        for pim in pims.keys():
+            pim_seg = []
+            fv_index= []
+            for seg in pims[pim].keys():
+                pim_seg.append(pims[pim][seg])
+                fv_index.append([fv[x] for x  in graph_list_index[pims[pim][seg][-1]]])
+            group.append(pim_seg)
+            pim_fv.append(np.mean([ i for j in fv_index for i in j], axis=0))
+        
+        G2 = nx.Graph()
+        for index1 in range(len(pim_fv)):
+            for index2 in range(len(pim_fv)):
+                G2.add_edge(index1, index2, weight = cosine(pim_fv[index1], pim_fv[index2]))
+        
+        
+        import pickle
+        with open("para_graph", "wb") as f:
+            pickle.dump([G2.nodes(data=True), G2.edges(data=True), group], f)
+        #G3 = deepcopy(self.construct_graph_para_new(G2))
+        cs2 = community.best_partition(G2, resolution=1.0)
+        cs2_sorted = sorted(cs2.items(), key = lambda x: x[1], reverse=False)
+        print (cs2_sorted)
+        prev = 0
+        group_seg_list = {}
+        for seg, cluster in cs2_sorted:
+            if prev !=cluster:
+                print ("\n\n====================Group Cluster=========================")
+                prev=cluster
+            print(group[seg], "\n\n")
+            for segi in list(map(lambda kv: kv[-1], group[seg])):
+                group_seg_list[segi] = cluster
+        print (prev)
+        pims = self.combine_pims_by_time(pims, group_seg_list)
+        return pims
+
+    
+    
     def get_communities(self):
         fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=False)
         meeting_graph, yetto_prune = self.construct_graph(fv, graph_list)

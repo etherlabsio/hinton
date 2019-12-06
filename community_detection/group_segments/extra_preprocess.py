@@ -25,6 +25,9 @@ import itertools
 
 
 # +
+
+
+
 from nltk.corpus import stopwords
 stop_words = stopwords.words("english")
 def st_get_candidate_phrases(text, pos_search_pattern_list=[r"""base: {<(CD)|(DT)|(JJR)>* (<VB.>*)( (<NN>+ <NN>+)|((<JJ>|<NN>) <NN>)| ((<JJ>|<NN>)+|((<JJ>|<NN>)* (<NN> <NN.>)? (<JJ>|<NN>)*) <NN.>))}"""]
@@ -41,7 +44,7 @@ def st_get_candidate_phrases(text, pos_search_pattern_list=[r"""base: {<(CD)|(DT
                     lambda_unpack(lambda word, pos, chunk: chunk != 'O')) if key]
 
         candidate_phrases = [cand for cand in candidates_tokens if cand not in stop_words and not all(char in punct for char in cand)]
-        print (candidate_phrases)
+        #print (candidate_phrases)
         return candidate_phrases
     
 def st_getregexChunks(text,grammar):
@@ -99,12 +102,12 @@ def preprocess_text(text):
             filtered_list = st_get_candidate_phrases(sent)
             if len(filtered_list)==0:
                 continue
-            elif True not in list(map(lambda x: len(x.split(' '))>1, filtered_list)):
-#                 if len(filtered_list)>3:
-#                     pass
-#                 else:
-#                     continue
-                continue
+            elif True not in list(map(lambda x: len(x.split(' '))>=1, filtered_list)):
+                if len(filtered_list) > 2:
+                    pass
+                else:
+                    continue
+                #continue
 
             if len(sent.split(' ')) > 250:
                 length = len(sent.split(' '))
@@ -114,12 +117,16 @@ def preprocess_text(text):
                 mod_texts.append(split2)
                 continue
 
-            if len(sent.split(' ')) <= 4:
+            if len(sent.split(' ')) <= 10:
                     continue
 
             mod_texts.append(sent)
-        if len(mod_texts) <=1:
+        if len(mod_texts) ==1:
+            if not (len(mod_texts[0].split(' ')) >= 20):
+                return ""
+        elif len(mod_texts) == 0:
             return ""
+        
     else:
         return ""
     

@@ -14,7 +14,7 @@
 
 import json
 import sys
-sys.path.append("../../../ai-engine/pkg/")
+sys.path.append("../../../ai-engine_temp/pkg/")
 from dataclasses import dataclass, asdict
 from typing import List
 import logging
