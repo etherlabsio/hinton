@@ -14,7 +14,6 @@
 
 # +
 
-
 #from scipy.spatial.distance import cityblock
 import copy
 import numpy as np
@@ -42,8 +41,9 @@ from gpt_feat_utils import GPT_Inference
 #
 # #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+sim_ep3/", device="cuda")
 # #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+nsp_sim_ep3/", device="cuda")
-#gpt_model = GPT_Inference("/home/arjun/gpt_experiments/engg_models/se+ether_2+1s_ep5_#2/", device="cuda")
-gpt_model = GPT_Inference("/home/shubham/projects/domain_minds_v2_gpt/se/model/epoch3/", device="cuda")
+#gpt_model = GPT_Inference("/home/arjun/gpt_experiments/engg_models/se+ether_2+1s_ep5_#2/", device="cpu")
+#gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/marketing/epoch3/", device="cpu")
+gpt_model = GPT_Inference("/home/shubham/projects/domain_minds_v2_gpt/se/model/epoch3/", device="cpu")
 # -
 
 
@@ -1015,7 +1015,7 @@ class community_detection():
         fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=True)
         meeting_graph, yetto_prune = self.construct_graph_ns_max(fv, graph_list)
         v = 0
-        t = 1
+        t = 1.0
         edge_count = meeting_graph.number_of_edges()
         meeting_graph_pruned = self.prune_edges_outlier(meeting_graph, graph_list, yetto_prune, v)
         

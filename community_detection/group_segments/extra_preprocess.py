@@ -27,7 +27,6 @@ import itertools
 # +
 
 
-
 from nltk.corpus import stopwords
 stop_words = stopwords.words("english")
 def st_get_candidate_phrases(text, pos_search_pattern_list=[r"""base: {<(CD)|(DT)|(JJR)>* (<VB.>*)( (<NN>+ <NN>+)|((<JJ>|<NN>) <NN>)| ((<JJ>|<NN>)+|((<JJ>|<NN>)* (<NN> <NN.>)? (<JJ>|<NN>)*) <NN.>))}"""]
@@ -117,15 +116,15 @@ def preprocess_text(text):
                 mod_texts.append(split2)
                 continue
 
-            if len(sent.split(' ')) <= 10:
-                    continue
+#             if len(sent.split(' ')) <= 10:
+#                     continue
 
             mod_texts.append(sent)
-        if len(mod_texts) ==1:
-            if not (len(mod_texts[0].split(' ')) >= 20):
-                return ""
-        elif len(mod_texts) == 0:
-            return ""
+        #if len(mod_texts) ==1:
+        #    if not (len(mod_texts[0].split(' ')) >= 20):
+        #        return ""
+        #elif len(mod_texts) == 0:
+        #    return ""
         
     else:
         return ""
