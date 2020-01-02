@@ -116,8 +116,8 @@ def preprocess_text(text):
                 mod_texts.append(split2)
                 continue
 
-#             if len(sent.split(' ')) <= 10:
-#                     continue
+            if len(sent.split(' ')) <= 10:
+                    continue
 
             mod_texts.append(sent)
         #if len(mod_texts) ==1:
@@ -129,8 +129,14 @@ def preprocess_text(text):
     else:
         return ""
     
+    if mod_texts == []:
+        return ""
     return mod_texts
 
+
+t_list = preprocess_text("It looks like a regression because it did not happen before and also it looks like when in the in a similar scenario when you are on iOS you do not run into that issue. Also need to resubmit the slack and iOS apps we are going to call the meter Labs instead of ether meet because it now has meat costs and notes. There is a bunch of changes related to that we need to do if especially the iOS team if you can take a look at the app and get it ready for the submission.")
+
+[st_get_candidate_phrases(x) for x in t_list]
 
 def format_time(tz_time, datetime_object=False):
     isoTime = iso8601.parse_date(tz_time)

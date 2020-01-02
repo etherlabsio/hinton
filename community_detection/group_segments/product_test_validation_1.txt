@@ -1,0 +1,65 @@
+{"body":{
+        "contextId": "01DTJ2RHXEJ6DWWPETAHFH8ZS0",
+        "mindId": "01DAATBC3AK1QWC5NYC5AHV2XZ",
+        "instanceId": "25d21f1e-6471-42bb-abb3-825aed65e27d",
+        "segments": [
+            {
+                "id": "2ec0b028-a11f-4f4d-8e2e-7797624bd126",
+                "originalText": "Building a prototype which in layman's term is like a working model of your product you then take their prototype back to your users have them play around with it. Have them give you feedback here their abuses take their feedback back and kind of do this process again, unless you till you feel that you've kind of hit the nail on the head and I'm ready to move on to the next stage of actually building the product. So now comes the actual build phase which is the grunt work, which is actually building this product and this experience that you've envisioned. Here you will be working with the team of Engineers to actually build and ship the product that you envision your core role as a p.m. In. This space is actually making sure that everyone is rallying behind the vision that you've set for the product. Remember you're the advocate for the user. The thing with Engineers is that they'll always want to solve the hardest problems the problems that they find hard the problems that they find challenging but those are not necessarily your users biggest problem. So remember You have to make sure that the entire team is aligned on that single Vision that you've set out for your product. The second important role in this space for you is to make sure that we ship the product on time and you do whatever it takes to get it done. If that means that four nights in a row you're making and giving coffee to your engineers you have to do it because shipping products on time is one of the key metrics for a good p.m. So now that you've defined the experience of your product you work with your engineering team to get it built the next. Thing that you would spend a lot of time doing is actually thinking about how to take this product to Market typically for a b2c product. This would involve two things one thinking about why new users would adopt a product. Like what is the compelling feature that will get those users to try and use your product and then communicating this effectively to those users. The second thing is growth. What can you build within the product such that your product reaches more and more and more users? ",
+                "confidence": 0.8471710000000001,
+                "startTime": "2019-12-23T10:59:03Z",
+                "endTime": "2019-12-23T11:01:04Z",
+                "duration": 121,
+                "recordingId": "8ee4df70-260c-4594-bcb3-21206afb656a",
+                "spokenBy": "716067a60a1a4034abc49a12ecafb39b",
+                "languageCode": "en-IN",
+                "transcriber": "google_speech_api",
+                "status": "completed",
+                "transcriptId": "b6998660-5fdf-496f-93e0-e4dd9b6cac0a",
+                "isEndOfSentence": true,
+                "createdAt": "2019-12-23T11:01:05.237466137Z",
+                "updatedAt": "2019-12-23T11:02:06.995193742Z",
+                "deletedAt": null,
+                "deleted": false
+            },
+            {
+                "id": "36919c42-a161-49bd-9b18-80ac5ce6ff31",
+                "originalText": "Understanding of the market and the competitive landscape now, why is this important in a lot of scenarios to understand why a user should use your product and not your competitors product. You need to understand the market in and out and what your competitor offers as their differentiation, especially in a B2B scenario understanding the competitors could mean a big difference between winning a sale or losing a sale. The next important thing that RPM does in her role is build a a great strategy for your product and tie it back to the business model of your company. Remember that you're trying to build a great product for your users. But your ultimate goal for your company is also increased the prophets or the revenue or the engagement whatever the key metrics are for your company. So it's very important that a p.m. Invest time in understanding her company's business model and making sure that the strategy she's building for her product is in line with that business model. Well now comes the really exciting bit. The third thing that a p.m. Spends a lot of time doing is actually defining the experience for a product as a p.m. Once you've defined your problem by understanding users understanding your Market thinking about a business model Etc. The next step is the actual exciting step, which is now figuring out a solution for that problem. Typically the steps involved in this solution or product design phase our first writing a strategy or a vision for your product. Like what do you want to achieve with this product? The Second Step then is figuring out a user flow for how you want to solve this problem for this depending on the size of the company or the type of the company you're working at you have a team of designers to help you with that what this process involves is first building a wireframe think about wireframe as like a blueprint of a building that an architect sells its to help you visualize how the user for will work for your product. Once you kind of nailed down your wire frame. the next ",
+                "confidence": 0.866043916,
+                "startTime": "2019-12-23T10:57:03Z",
+                "endTime": "2019-12-23T10:59:04Z",
+                "duration": 121,
+                "recordingId": "7c4dce6d-7cf7-4efb-9ca4-46b5a63ba433",
+                "spokenBy": "716067a60a1a4034abc49a12ecafb39b",
+                "languageCode": "en-IN",
+                "transcriber": "google_speech_api",
+                "status": "completed",
+                "transcriptId": "b6998660-5fdf-496f-93e0-e4dd9b6cac0a",
+                "isEndOfSentence": false,
+                "createdAt": "2019-12-23T10:59:06.287071524Z",
+                "updatedAt": "2019-12-23T11:00:07.986888193Z",
+                "deletedAt": null,
+                "deleted": false
+            },
+            {
+                "id": "b9c4ba17-f027-43c4-9a35-e71cbf858432",
+                "originalText": "Hi guys, my name is Ravi and I am the co-founder and product head at a brat. I meet a lot of people who really excited about, you know, kind of starting their career as a project manager. But when I talk to them it turns out that the absolutely no idea what a p.m. Does a lot of people think that a product manager is the same as a project management, you know, some people think that a product manager is just like a general manager and you know, they think that he has nothing to do with technology. So I think once and for all I really want to make clear what the hell does a product manager do so you must have heard a lot of people say that a p.m. Is like a mini CEO of his or her product. But what does that actually mean? Right? What what do you mean by saying that someone is the mini CEO? You must have also seen that classic Venn diagram that a p.m. Sits in the middle of business Tech and user experience again, you know, that's that's more. Jargon unless you kind of understand what that means. So p.m. In my opinion does everything that is required to ship a quadratic to the user right in Broad terms. It can be broken down into user and market research business strategy and business modeling building a great user experience for your product getting the product built from a technical point of view. And then finally taking the product to market. The first thing that a p.m. Does is understanding the user and understanding the market right as a p.m. You're building a great. Product for your users. You're trying to solve problems or your users, right? So understanding. The user is a core part of what a p.m. Does. How does the PM do it? Well, there are multiple ways, you know, people do surveys people do interviews people do sit with the users and see how they're using their product people just look at data to see how users are using the product. There are multiple ways of how you actually go and in-depth understand your users, but that's really a really large part of your role as a PS. The second thing that the PM does is build a ",
+                "confidence": 0.811802446,
+                "startTime": "2019-12-23T10:55:03Z",
+                "endTime": "2019-12-23T10:57:04Z",
+                "duration": 121,
+                "recordingId": "f77dc305-0adc-46a4-b903-d8e894fe679a",
+                "spokenBy": "716067a60a1a4034abc49a12ecafb39b",
+                "languageCode": "en-IN",
+                "transcriber": "google_speech_api",
+                "status": "completed",
+                "transcriptId": "b6998660-5fdf-496f-93e0-e4dd9b6cac0a",
+                "isEndOfSentence": false,
+                "createdAt": "2019-12-23T10:57:06.040537589Z",
+                "updatedAt": "2019-12-23T10:58:28.101247783Z",
+                "deletedAt": null,
+                "deleted": false
+            }
+        ]
+    }
+    }

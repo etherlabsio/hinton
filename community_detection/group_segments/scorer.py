@@ -33,6 +33,7 @@ s3 = boto3.resource('s3')
 
 # +
 
+
 def cosine(vec1, vec2):
     return dot(vec1, vec2) / (norm(vec1) * norm(vec2))
 
@@ -46,7 +47,6 @@ def getClusterScore(mind_vec, sent_vec):
 
 
 # +
-
 
 
 def get_mind_score(segment_fv, mind_dict):
