@@ -37,14 +37,14 @@ import numpy as np
 from log.logger import setup_server_logger
 logger = logging.getLogger()
 
-sys.path.append("/home/arjun/BERT_Similarity_experiments/code/")
+sys.path.append("/home/ray__/ssd/BERT/")
 from gpt_feat_utils import GPT_Inference
 #
 # #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+sim_ep3/", device="cuda")
 # #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+nsp_sim_ep3/", device="cuda")
 #gpt_model = GPT_Inference("/home/arjun/gpt_experiments/engg_models/se+ether_2+1s_ep5_#2/", device="cpu")
 #gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/marketing/epoch3/", device="cpu")
-gpt_model = GPT_Inference("/home/shubham/projects/domain_minds_v2_gpt/se/model/epoch3/", device="cpu")
+gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/se/epoch3/", device="cpu")
 #gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/ai/epoch3/", device="cpu")
 #gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/hr/epoch3/", device="cpu")
 #gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/sales/epoch3/", device="cpu")
