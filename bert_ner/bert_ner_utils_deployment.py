@@ -43,7 +43,7 @@ class BERT_NER():
             entities, labels = ner_model.get_entities(text,get_labels=True)
     '''
     def __init__(self, 
-                 model_path,tok_path=None,labels=["O","MISC"]):
+                 model_path,tok_path=None,labels=["O","MISC"],device="cpu"):
         
         self.labels = labels
         if model_path[-1]!="/":
@@ -51,20 +51,22 @@ class BERT_NER():
         self.config = BertConfig()
         self.config.num_labels = len(self.labels)
         self.model = BertForTokenClassification_custom(self.config)
-        self.state_dict = torch.load(model_path+"pytorch_model.bin", map_location=torch.device("cpu"))
+        self.device = torch.device(device)
+        self.state_dict = torch.load(model_path+"pytorch_model.bin", map_location=self.device)
         self.model.load_state_dict(self.state_dict)
+        self.model.to(self.device)
         self.model.eval()
         if tok_path==None:
             tok_path=model_path
         self.tokenizer = BertTokenizer(tok_path+"vocab.txt")
         self.sm = nn.Softmax(dim=1)
         self.conf = 0.995
-        self.contractions = {"[sep]":"separator","[cls]":"classify","ain't": 'am not', "aren't": 'are not', "can't": 'cannot', "can't've": 'cannot have', "'cause": 'because', "could've": 'could have', "couldn't": 'could not', "couldn't've": 'could not have', "didn't": 'did not', "doesn't": 'does not', "don't": 'do not', "hadn't": 'had not', "hadn't've": 'had not have', "hasn't": 'has not', "haven't": 'have not', "he'd": 'he would', "he'd've": 'he would have', "he'll": 'he will', "he's": 'he is', "how'd": 'how did', "how'll": 'how will', "how's": 'how is', "i'd": 'i would', "i'll": 'i will', "i'm": 'i am', "i've": 'i have', "isn't": 'is not', "it'd": 'it would', "it'll": 'it will', "it's": 'it is', "let's": 'let us', "ma'am": 'madam', "mayn't": 'may not', "might've": 'might have', "mightn't": 'might not', "must've": 'must have', "mustn't": 'must not', "needn't": 'need not', "oughtn't": 'ought not', "shan't": 'shall not', "sha'n't": 'shall not', "she'd": 'she would', "she'll": 'she will', "she's": 'she is', "should've": 'should have', "shouldn't": 'should not', "that'd": 'that would', "that's": 'that is', "there'd": 'there had', "there's": 'there is', "they'd": 'they would', "they'll": 'they will', "they're": 'they are', "they've": 'they have', "wasn't": 'was not', "we'd": 'we would', "we'll": 'we will', "we're": 'we are', "we've": 'we have', "weren't": 'were not', "what'll": 'what will', "what're": 'what are', "what's": 'what is', "what've": 'what have', "where'd": 'where did', "where's": 'where is', "who'll": 'who will', "who's": 'who is', "won't": 'will not', "wouldn't": 'would not', "you'd": 'you would', "you'll": 'you will', "you're": 'you are'}
-        self.stop_words = {'','oh','uh','um','huh','like','right','yeah','okay','ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about', 'once', 'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be', 'some', 'for', 'do', 'its', 'yours', 'such', 'into', 'of', 'most', 'itself', 'other', 'off', 'is', 's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves', 'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through', 'don', 'nor', 'me', 'were', 'her', 'more', 'himself', 'this', 'down', 'should', 'our', 'their', 'while', 'above', 'both', 'up', 'to', 'ours', 'had', 'she', 'all', 'no', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does', 'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'not', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where', 'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few', 'whom', 't', 'being', 'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was', 'here', 'than'}
+        self.contractions = {"&":"and","[sep]":"separator","[cls]":"classify","ain't": 'am not', "aren't": 'are not', "can't": 'cannot', "can't've": 'cannot have', "'cause": 'because', "could've": 'could have', "couldn't": 'could not', "couldn't've": 'could not have', "didn't": 'did not', "doesn't": 'does not', "don't": 'do not', "hadn't": 'had not', "hadn't've": 'had not have', "hasn't": 'has not', "haven't": 'have not', "he'd": 'he would', "he'd've": 'he would have', "he'll": 'he will', "he's": 'he is', "how'd": 'how did', "how'll": 'how will', "how's": 'how is', "i'd": 'i would', "i'll": 'i will', "i'm": 'i am', "i've": 'i have', "isn't": 'is not', "it'd": 'it would', "it'll": 'it will', "it's": 'it is', "let's": 'let us', "ma'am": 'madam', "mayn't": 'may not', "might've": 'might have', "mightn't": 'might not', "must've": 'must have', "mustn't": 'must not', "needn't": 'need not', "oughtn't": 'ought not', "shan't": 'shall not', "sha'n't": 'shall not', "she'd": 'she would', "she'll": 'she will', "she's": 'she is', "should've": 'should have', "shouldn't": 'should not', "that'd": 'that would', "that's": 'that is', "there'd": 'there had', "there's": 'there is', "they'd": 'they would', "they'll": 'they will', "they're": 'they are', "they've": 'they have', "wasn't": 'was not', "we'd": 'we would', "we'll": 'we will', "we're": 'we are', "we've": 'we have', "weren't": 'were not', "what'll": 'what will', "what're": 'what are', "what's": 'what is', "what've": 'what have', "where'd": 'where did', "where's": 'where is', "who'll": 'who will', "who's": 'who is', "won't": 'will not', "wouldn't": 'would not', "you'd": 'you would', "you'll": 'you will', "you're": 'you are'}
+        self.stop_words = {'','hi','hey','welcome',"i",'oh','uh','um','huh','like','right','yeah','okay','ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about', 'once', 'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be', 'some', 'for', 'do', 'its', 'yours', 'such', 'into', 'of', 'most', 'itself', 'other', 'off', 'is', 's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves', 'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through', 'don', 'nor', 'me', 'were', 'her', 'more', 'himself', 'this', 'down', 'should', 'our', 'their', 'while', 'above', 'both', 'up', 'to', 'ours', 'had', 'she', 'all', 'no', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does', 'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'not', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where', 'too', 'only', 'myself', 'which', 'those', 'after', 'few', 'whom', 't', 'being', 'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was', 'here', 'than'}
         
     def replace_contractions(self, 
                              text):
-        text = re.sub(" (\w{1} \w{1}) (\w{1} )*",lambda x:" "+x.group(0).replace(" ","").upper()+" ",text)
+        text = re.sub(" (\w{1} \w{1}) (\w{1}[ .])*",lambda x:" "+x.group(0).replace(" ","").upper()+" ",text)
         text = re.sub("[A-Z]\. ",lambda mobj: mobj.group(0)[0]+mobj.group(0)[1],text)
         text = re.sub("\.(\w{2,})",lambda mobj: ". "+mobj.group(1),text)
         for word in text.split(' '):
@@ -86,7 +88,6 @@ class BERT_NER():
         for sent in sent_tokenize(text):
             if len(sent.split())>1:
                 sent_ent, sent_score, sent_labels= self.get_entities_from_sentence(sent,concat)
-
                 segment_entities.extend(sent_ent)
                 segment_scores.extend(sent_score)
                 segment_labels.extend(sent_labels)
@@ -106,7 +107,7 @@ class BERT_NER():
         token_to_word=[]
         sent_entity_list, sent_scores, sent_labels = [], [], []
         # splitting text, preserving punctuation
-        split_text = list(filter(lambda word: word not in ['',None],re.split("[\s]|([?,!/]+)|\.(\w{2,}[*]*\w{2,})|(\w{2,}[*]*\w{2,})(\.)",clean_text)))
+        split_text = list(filter(lambda word: word not in ['',None],re.split("[\s]|([?,!/()]+)|\.(\w{2,}[*]*\w{2,})|(\w{2,}[*]*\w{2,})(\.)",clean_text)))
         pos_text = pos_tag(split_text)
         input_ids, token_to_word = self.prepare_input_for_model(pos_text)
         
@@ -116,7 +117,8 @@ class BERT_NER():
                 sent_entity_list, sent_scores, sent_labels = self.concat_entities(clean_text,entities)
                 sent_labels = self.prioritize_labels(sent_labels)
             else:
-                sent_entity_list, sent_scores,_,sent_labels = zip(*entities)
+                sent_entity_list, sent_scores,sent_tags,sent_labels = zip(*entities)
+                return sent_entity_list, sent_scores,sent_tags,sent_labels
             sent_entity_list = self.capitalize_entities(sent_entity_list)
             
         
@@ -125,26 +127,31 @@ class BERT_NER():
         input_ids = []
         token_to_word = []
 
-        for (word, tag) in pos_text:
+        for w_index, (word, tag) in enumerate(pos_text):
             toks = self.tokenizer.encode(word)
             # removing characters that usually do not appear within text
-            clean_word = re.sub(r"[^a-zA-Z0-9_\'*-.]+", "", word).strip(" .,")
-            token_to_word.extend([(clean_word, tag)] * len(toks))
+            clean_word = re.sub(r"[^a-zA-Z0-9_\'*-.]+", "", word).strip(" .,'\"")
+            token_to_word.extend([(w_index, clean_word, tag)] * len(toks))
             input_ids.extend(toks)
         return input_ids, token_to_word
     
     def prioritize_labels(self, sent_labels):
         preference_labels = ["ORG","MISC","PER","LOC","O"]
-        sent_labels = [sorted(label_list,key = lambda l: preference_labels.index(l))[0] for label_list in sent_labels]
+        sent_labels = [sorted(label_list,key = lambda l: preference_labels.index(l.lstrip("BI")))[0] for label_list in sent_labels]
         return sent_labels
             
         
     def capitalize_entities(self,entity_list):
         def capitalize_entity(ent):
             if "." in ent:
-                ent = ent.title().replace(".","")
-            if not any([word.isupper() for word in list(ent)]):
+                ent = ent.title()
+                return ent
+            if ent.lower() in self.stop_words:
+                ent = ent.lower()
+                return ent
+            if not ent[0].isupper():
                 ent = ent.capitalize()
+
             return ent
         entity_list = list(map(lambda entities: " ".join(list(map(lambda ent: capitalize_entity(ent),entities.split()))),entity_list))
         
@@ -157,19 +164,17 @@ class BERT_NER():
         entities=[]
         for i in range(0,len(input_ids),batch_size):
             encoded_text_sp = self.tokenizer.encode("[CLS]") + input_ids[i:i+batch_size] + self.tokenizer.encode("[SEP]")
-            input_tensor = torch.tensor(encoded_text_sp).unsqueeze(0)
+            input_tensor = torch.tensor(encoded_text_sp, device=self.device).unsqueeze(0)
             with torch.no_grad():
                 outputs = self.model(input_tensor)[0][0,1:-1]
             
-            scores = self.sm(outputs).detach().numpy().max(-1)
-            labels = [self.labels[ind] for ind in self.sm(outputs).argmax(-1).detach().numpy()]
-
-            for j,(tok,tag) in enumerate(token_to_word[i:i+batch_size]):
+            scores = self.sm(outputs).detach().cpu().numpy().max(-1)
+            labels = [self.labels[ind] for ind in self.sm(outputs).argmax(-1).detach().cpu().numpy()]
+            batch_tok_word = token_to_word[i:i+batch_size]
+            for j, (w_ind, tok, tag) in enumerate(batch_tok_word):
                 # Consider Entities, and Non-Entities with low confidence (false negatives)
-                if tok.lower() not in self.stop_words:
-                    if labels[j] not in ["O"] or (labels[j]=="O" and scores[j]<self.conf):
-                        entities.append((tok,scores[j],tag,labels[j]))
-        
+                if labels[j] not in ["O"] or (labels[j]=="O" and scores[j]<self.conf):
+                    entities.append((tok,scores[j],tag,labels[j], w_ind))
         return entities
     
     def tokenize(self, 
@@ -186,41 +191,50 @@ class BERT_NER():
         # handling acronym followed by capitalized entitity
         text = re.sub("\.(\w{2,})",lambda mobj: " "+mobj.group(1),text).lower()
         # remove consecutive duplicate entities from list(tuple(word, score, pos_tag, label))
-        grouped_words = [
-            grouped_entity[0]
-            for grouped_entity in groupby(entities,key=lambda x:(x[0],x[2]))
-        ]
-        grouped_scores = {(ent[0],ent[2]):ent[1] for ent in entities}
-        grouped_labels = {(ent[0],ent[2]):ent[3] for ent in entities}
+        grouped_scores = {}
+        grouped_labels = {}
+        grouped_words = []
+        prev = -1
+        for i,(tok, sc, tag, lab, w_ind) in enumerate(entities):
+            grouped_scores[(tok,tag,w_ind)] = min(grouped_scores.get((tok,tag,w_ind),2),sc)
+            grouped_labels[(tok,tag,w_ind)] = grouped_labels.get((tok,tag,w_ind),[]) + [lab]
+            if prev!=w_ind:
+                grouped_words.append((tok,tag,w_ind))
+            prev = w_ind
         for i in range(len(grouped_words)):
-            if i in seen:
+            if i in seen or grouped_words[i][0].lower() in self.stop_words:
                 continue
 
-            conc = grouped_words[i][0].strip("'\"")+" "
+            conc = [grouped_words[i][0]]
 
-            check = grouped_words[i][0]+" "
+            check = grouped_words[i][-1]
             score = grouped_scores[grouped_words[i]]
-            label = [grouped_labels[grouped_words[i]]]
+            label = grouped_labels[grouped_words[i]]
             seen+=[i]
             k=i+1
-
-            while k<len(grouped_words) and (check.lower()+grouped_words[k][0].lower() in text):
-                conc_word=grouped_words[k][0].strip("'\"")+" "
-                conc += conc_word 
-                check+= grouped_words[k][0]+" "
+            while k<len(grouped_words) and grouped_words[k][-1] - check == 1:
+                conc_word=grouped_words[k][0]
+                conc += [conc_word]
+                check = grouped_words[k][-1]
                 score += grouped_scores[grouped_words[k]]
-                label += [grouped_labels[grouped_words[k]]]
+                label += grouped_labels[grouped_words[k]]
                 seen+=[k]
                 k+=1
-                
-            # remove single verb and punct entities
-            if len(conc.split())==1:
-                if grouped_words[i][1][0] in ["V","."]:
+            # remove single verb, punct and pronoun entities
+            if len(conc)==1:
+                if label[0]=="O" and grouped_words[i][1][0] not in ["N","F"]:
                     continue
-                conc = conc.split("'")[0]
+                conc = [" ".join(conc).split("'")[0]]
+            
+            # stripping stop_words  
+            while conc and conc[-1].lower() in self.stop_words:
+                conc.pop(-1)
+            
+            if conc:
+                clean_entities = [" ".join(conc)]
+                sent_entity_list += clean_entities
 
-            sent_entity_list += [conc.strip(" ,.")]
-            sent_scores += [score/(k-i)]
-            sent_labels += [list(set(label))]
+                sent_scores += [score/(k-i)]
+                sent_labels += [list(set(label))]
         
         return sent_entity_list,sent_scores, sent_labels
