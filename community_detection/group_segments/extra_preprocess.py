@@ -120,9 +120,9 @@ def preprocess_text(text):
                     continue
 
             mod_texts.append(sent)
-        #if len(mod_texts) ==1:
-        #    if not (len(mod_texts[0].split(' ')) >= 20):
-        #        return ""
+        if len(mod_texts) ==1:
+            if not (len(mod_texts[0].split(' ')) >= 20):
+                return ""
         #elif len(mod_texts) == 0:
         #    return ""
         

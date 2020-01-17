@@ -44,7 +44,7 @@ from gpt_feat_utils import GPT_Inference
 # #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+nsp_sim_ep3/", device="cuda")
 #gpt_model = GPT_Inference("/home/arjun/gpt_experiments/engg_models/se+ether_2+1s_ep5_#2/", device="cpu")
 #gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/marketing/epoch3/", device="cpu")
-gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/se/epoch3/", device="cpu")
+gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/ether/", device="cpu")
 #gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/ai/epoch3/", device="cpu")
 #gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/hr/epoch3/", device="cpu")
 #gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/sales/epoch3/", device="cpu")
@@ -351,7 +351,7 @@ class community_detection():
                 #if nodeb in list(map(lambda kv: kv[0], lowest_score[nodea])):
                 #    print (graph_list[nodea][0], "!==", graph_list[nodeb][0])
                 pass
-            elif (self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]]) in [-2, -1, 1, 2] and weight["weight"] > outlier_score[nodea]["avg+pstd"] :
+            elif (self.segments_order[graph_list[nodeb][-1]] - self.segments_order[graph_list[nodea][-1]]) in [-2, -1, 1, 2] and weight["weight"] > outlier_score[nodea]["q3"] :
                     print (graph_list[nodea], graph_list[nodeb])
                     pass
             else:
