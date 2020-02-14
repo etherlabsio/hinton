@@ -5,7 +5,6 @@ sys.path.append("../")
 from main import handler
 
 def call_gs(request):
-    print ("nope")
     res = handler(request, None)
     group = json.loads(res['body'])
 

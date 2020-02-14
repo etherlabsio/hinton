@@ -1,0 +1,45 @@
+{"body":{
+        "contextId": "01DBB3SNC86R968E1ESMQFCYK7",
+        "mindId": "01DAAQYN9GBEBC92AYWNXEDP0C",
+        "instanceId": "549c729f-5053-4412-bf95-3f2fe60cd794",
+        "segments": [
+            {
+                "id": "2096c9d9-4ad9-4477-9c8d-e932a6bf5963",
+                "originalText": "Small businesses can find the recruitment process a daunting Prospect selecting. The right person depends on following a series of distinct steps skips you a simple process that you can use no matter what type or level of position you want to fill the process also ensures that your recruitment is, efficient effective and fair look at each of these steps briefly. The first step is defining the role. You've made the decision that you need to take someone on and that the best option is to have someone directly employed in your business before you rush off to find someone think carefully about what the role is the actual requirements of the job and how it fits into your business and your future plans write a job description to help you clarify the purpose tasks and responsibilities of the job use a job description template to help guide you. And remember this is about the job not the person the next step is to build a profile of the ideal person to fill this role. Again. There's a template and guidance available to help you a person specification will help you undertake the selection and interview process in a systematic way. The next step is attracting applicants. You need to start the search for suitable candidates. Think about where you can advertise to attract a wide range of good quality applicants. You're aiming The best response at the least cost there are some suggestions given in this module as well as way to advertise. You have to consider the advert itself an effective job adverts sells a position and the business this is particularly important for small and new businesses because the company name may not be particularly well-known keep the adverts short and to the point and make sure it's non-discriminatory and that you avoid gender or culturally specific language. Image you may consider using an application. ",
+                "confidence": 0.883929382,
+                "startTime": "2020-02-05T16:44:35Z",
+                "endTime": "2020-02-05T16:46:35Z",
+                "duration": 120,
+                "recordingId": "a47bf322-d6ac-4d6b-a4ff-4691d6ff0d3b",
+                "spokenBy": "716067a60a1a4034abc49a12ecafb39b",
+                "languageCode": "en-US",
+                "transcriber": "google_speech_api",
+                "status": "completed",
+                "transcriptId": "6e2f80bb-d434-4b99-8771-6bfa2c4ec4ef",
+                "isEndOfSentence": true,
+                "createdAt": "2020-02-05T16:46:36.398043861Z",
+                "updatedAt": "2020-02-05T16:47:17.711231381Z",
+                "deletedAt": null,
+                "deleted": false
+            },
+            {
+                "id": "2ef8e707-cf91-4aa1-aa84-bdde53121078",
+                "originalText": "Foam one recruiting this means you don't rely on each candidate responding in their own way. You can be sure the candidates provide all the information that's necessary and relevant to the job and it also makes it easier to compare like with like and make your initial assessment. The next step in the recruiting process is selecting the right candidate first draw up. Your selection criteria is a good idea to create a checklist based on the essential or desirable skills and experience required use your checklist to assess how closely candidates match up to the job and person specification. You may want to ask your business advisor or a business colleague to assist you with the selection and interview process this helps to make sure there's no personal bias in the process and is helpful. If at least one person on the selection panel has been trained in equality and diversity issues when you have your short list of suitable people send them a letter inviting Them to an interview take a with the interview process. Make sure you give every candidate the same opportunity is to give the best presentation of themselves to demonstrate their suitability and to ask questions of the interviewer. It was a consistent structure for the interview to at the end of each interview. Tell the candidate what happens next and when they can expect to hear from you when you've made your decision notify the successful candidate, but also remember To let the other candidates know that they were not successful finally having made your decision and selected your candidate. There are a number of things. You have to consider before they become an employee. The full details are in this module. I suggest you go through them carefully. If you follow these steps whenever you're recruiting you'll find it more straight forward and you'll also make sure that your recruitment is efficient effective and fair. ",
+                "confidence": 0.8925981624999999,
+                "startTime": "2020-02-05T16:46:35Z",
+                "endTime": "2020-02-05T16:48:32Z",
+                "duration": 117,
+                "recordingId": "3cb7d404-64c6-493d-a8eb-b37ada90985a",
+                "spokenBy": "716067a60a1a4034abc49a12ecafb39b",
+                "languageCode": "en-US",
+                "transcriber": "google_speech_api",
+                "status": "completed",
+                "transcriptId": "6e2f80bb-d434-4b99-8771-6bfa2c4ec4ef",
+                "isEndOfSentence": true,
+                "createdAt": "2020-02-05T16:48:33.72785992Z",
+                "updatedAt": "2020-02-05T16:49:35.810419865Z",
+                "deletedAt": null,
+                "deleted": false
+            }
+        ]
+    }}
