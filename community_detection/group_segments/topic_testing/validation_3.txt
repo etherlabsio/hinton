@@ -1,6 +1,6 @@
 {"body":{
         "contextId": "01DBCS96Y867PTEH9Z5B6TAACM",
-        "mindId": "01DAAQY88QZB19JQZ5PRJFR76Y",
+        "mindId": "01dadp74wfv607knpcb6vvxgtg",
         "instanceId": "80f50f9c-29e1-424a-b549-4f2a2c870f01",
         "segments": [
             {
