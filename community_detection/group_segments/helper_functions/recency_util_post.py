@@ -5,6 +5,7 @@ import recency_util_post
 
 from bert_ner_utils_graph import BERT_NER
 from distilbert_pos_tagger import DistilBertPosTagger
+from scipy.spatial.distance import cosine
 
 pos_tagger = DistilBertPosTagger("/home/ray__/ssd/pos_tag/model/Distilbert/","cpu")
 ner_model = BERT_NER('/home/ray__/ssd/bert-ner/',labels = ["O", "MISC", "MISC",  "PER", "PER", "ORG", "ORG", "LOC", "LOC"],device="cpu")
@@ -448,3 +449,79 @@ def update_entity_feat_dict(ent_sent_dict, ent_feat_dict):
         else:
             ent_feat_dict["<ETHER>-"+ent] = ent_feat
     return ent_feat_dict
+
+
+
+### finding closest entities and updating the new entities in com_map, gc and lc.
+def get_entity_artifacts(artifacts_dir):
+    com_map = pickle.load(open(artifacts_dir + "com_map.pkl","rb"))
+    gc = pickle.load(open(artifacts_dir + "gc.pkl","rb"))
+    lc = pickle.load(open(artifacts_dir + "lc.pkl","rb"))
+    
+    return com_map, gc, lc
+
+def get_common_entities(com_map, entity_dict):
+    fv = {}
+    common_entities = set(com_map.keys()) & set(entity_dict.keys())
+    fv = dict([(ent, entity_dict[ent]) for ent in common_entities])
+    return fv
+
+def get_most_similar_entities(fv_new, fv):
+    placement = {}
+    for ent, fv_ent in fv_new.items():
+        most_similar = [(e, 1-cosine(fv_ent, fv_old_ent)) for e, fv_old_ent in fv.items()]
+        most_similar = list(sorted(most_similar, key=lambda kv:kv[1], reverse=True))[:10]
+        ent_list = list(map(lambda kv:kv[0], most_similar))
+        placement[ent] = ent_list
+    return placement
+
+def get_agreable_communities(new_ent_placement, com_map):
+    #print (new_ent_placement)
+    agreed_communities = {}
+    for ent, ent_list in new_ent_placement.items():
+        agreed_communities[ent] = [com_map[e] for e in ent_list if e in com_map.keys()]
+        agg = Counter(agreed_communities[ent]).most_common()[0]
+        #print (ent, agg[0])
+        if agg[1]>2:
+            agreed_communities[ent] = agg[0]
+        else:
+            agreed_communities[ent] = -1
+    return agreed_communities
+
+def update_communitiy_artifacts(agreed_communities, com_map, gc, lc):
+    print ("updating community artifacts")
+    updated_comm_list = []
+    #print (agreed_communities)
+    for new_ent, comm in agreed_communities.items():
+        if comm!=-1:
+            print (new_ent)
+            com_map[new_ent] = comm
+            if comm in gc.keys():
+                gc[comm] += 1
+            else:
+                gc[comm] = 1
+            
+            if comm in lc.keys():
+                if len(lc[comm])!=5:
+                    if comm not in updated_comm_list:
+                        lc[comm].append(1)
+                    else:
+                        lc[comm].append(lc[comm].pop()+1)
+                else:
+                    if comm not in updated_comm_list:
+                        del lc[comm][0]
+                        lc[comm].append(1)
+                    else:
+                        lc[comm].append(lc[comm].pop()+1)
+                
+            else:
+                lc[comm] = [1]
+            updated_comm_list.append(comm)
+    return com_map, gc, lc
+
+def dump_community_artifacts(com_map, gc, lc, entity_dict, artifacts_dir):
+    pickle.dump(com_map ,open(artifacts_dir+"com_map.pkl", "wb"))
+    pickle.dump(entity_dict ,open(artifacts_dir+"entity.pkl", "wb"))
+    pickle.dump(gc ,open(artifacts_dir+"gc.pkl", "wb"))
+    pickle.dump(lc ,open(artifacts_dir+"lc.pkl", "wb"))
+    return 

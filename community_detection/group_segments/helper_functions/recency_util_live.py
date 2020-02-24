@@ -134,6 +134,7 @@ def compute_groups_new_call(req, artifacts_dir, store=False):
     group_ent_map = get_entity_mapping(group_ent, ent_fv, com_map, kp_entity_graph)
     group_ent_map_filtered = filter_entity_community(group_ent_map, ent_fv, com_map, kp_entity_graph)
     group_ent_map_rank_lc, group_ent_map_rank_gc, gc_copy, lc_copy = get_entity_mapping_rank(group_ent_map_filtered, gc, lc, ent_fv, com_map, kp_entity_graph)
+    #print (lc_copy)
     if store:
         print ("writing the gc and lc update.")
         pickle.dump(gc_copy, open(artifacts_dir + "gc.pkl","wb"))

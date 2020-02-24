@@ -11,8 +11,10 @@ from gpt_feat_utils import GPT_Inference
 from scipy.spatial.distance import cosine
 import numpy as np
 from community import best_partition
+from copy import deepcopy
 #gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/ai/epoch3/", device="cuda")
-gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/se/epoch3/", device="cpu")
+#gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/se/epoch3/", device="cpu")
+gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/customer_service/epoch3/", device="cuda")
 #gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/product/", device="cuda")
 #gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/ether_v2/ether_googleJan13_groupsplit_withstop_4+w_gt3s_lr3e-5/",device="cpu")
 
@@ -78,6 +80,11 @@ def get_ent(request, ent_fv, com_map, kp_entity_graph):
         for kp in list(set(kp_Map_list)):
             kp_ent_map.extend([ele for ele in list(kp_entity_graph[kp]) if kp_entity_graph.nodes[ele]['node_type']=='entity'])
 
+        kp_ent_map_intrm = deepcopy(kp_ent_map)
+        for ent in kp_ent_map_intrm:
+            if kp_entity_graph.nodes[ent]['is_ether_node']==True:
+                kp_ent_map.append("<ETHER>-"+ent)
+                
         kp_ent_map = list(set(kp_ent_map+ent_node_list))
         kp_ent_map = list(set(kp_ent_map)&set(ent_fv))
 
