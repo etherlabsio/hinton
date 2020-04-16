@@ -57,7 +57,7 @@ def filter_entity_community(group_ent_map, ent_fv, com_map, kp_entity_graph):
             for i, count in count_a:
                 if count>1 :
                     filtered_ent_map.append((i, count))
-
+            
             group_ent_map_filtered[groupid] = filtered_ent_map
 
     return group_ent_map_filtered
@@ -139,4 +139,4 @@ def compute_groups_new_call(req, artifacts_dir, store=False):
         print ("writing the gc and lc update.")
         pickle.dump(gc_copy, open(artifacts_dir + "gc.pkl","wb"))
         pickle.dump(lc_copy, open(artifacts_dir + "lc.pkl","wb"))
-    return group, group_ent_map_rank_lc, group_ent_map_rank_gc, gc_copy ,lc_copy
+    return group, group_ent_map_rank_lc, group_ent_map_rank_gc, gc_copy ,lc_copy, group_ent_map_filtered, group_ent

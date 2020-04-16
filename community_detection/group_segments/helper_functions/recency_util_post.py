@@ -12,7 +12,7 @@ ner_model = BERT_NER('/home/ray__/ssd/bert-ner/',labels = ["O", "MISC", "MISC", 
 
 sys.path.append("/home/ray__/ssd/BERT/") # gpt model utils location
 from gpt_feat_utils import GPT_Inference
-gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/se/epoch3/", device="cpu")
+gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/customer_service/epoch3/", device="cpu")
 
 import pickle
 import pandas as pd
@@ -211,7 +211,10 @@ def form_sentence_graph(master_paragraphs, master_ids, multi_label_dict):
                     else:
                         ent_sent_dict[ent] = {meet_id1:[sent]}
                         label_counter = Counter(dict.fromkeys(ner_model.labels,0))
+                        print (label_counter)
+                        print (lab)
                         label_counter.update([lab])
+                        print (label_counter)
                         label_dict[ent] = label_counter
             for sent,kps in zip(master_sent_list,master_kp_list):
                 for kp in kps:
@@ -461,10 +464,11 @@ def get_entity_artifacts(artifacts_dir):
     return com_map, gc, lc
 
 def get_common_entities(com_map, entity_dict):
-    fv = {}
+    fv_new = {}
     common_entities = set(com_map.keys()) & set(entity_dict.keys())
+    fv_new = dict([(ent, entity_dict[ent]) for ent in entity_dict.keys() if ent not in common_entities and "<ETHER>-" in ent])
     fv = dict([(ent, entity_dict[ent]) for ent in common_entities])
-    return fv
+    return fv_new, fv
 
 def get_most_similar_entities(fv_new, fv):
     placement = {}
@@ -482,7 +486,7 @@ def get_agreable_communities(new_ent_placement, com_map):
         agreed_communities[ent] = [com_map[e] for e in ent_list if e in com_map.keys()]
         agg = Counter(agreed_communities[ent]).most_common()[0]
         #print (ent, agg[0])
-        if agg[1]>2:
+        if agg[1]>1:
             agreed_communities[ent] = agg[0]
         else:
             agreed_communities[ent] = -1

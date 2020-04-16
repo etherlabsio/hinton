@@ -12,9 +12,9 @@ from scipy.spatial.distance import cosine
 import numpy as np
 from community import best_partition
 from copy import deepcopy
-#gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/ai/epoch3/", device="cuda")
-#gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/se/epoch3/", device="cpu")
-gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/customer_service/epoch3/", device="cuda")
+
+gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/customer_service/epoch3/", device="cpu")
+
 #gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/product/", device="cuda")
 #gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/ether_v2/ether_googleJan13_groupsplit_withstop_4+w_gt3s_lr3e-5/",device="cpu")
 
@@ -36,6 +36,7 @@ def get_ent(request, ent_fv, com_map, kp_entity_graph):
     group_ent = {}
     for groupid, groupobj in group.items():
         seg_text = " ".join([segobj['originalText'] for segobj in groupobj])
+        seg_text = " ".join(preprocess_text(seg_text))
         text_kps = kp_e.get_candidate_phrases(seg_text)
         text_kps = list(set([ele.lower() for ele in text_kps]))
         tagged_sents = nltk.pos_tag_sents(nltk.word_tokenize(sent) for sent in nltk.sent_tokenize(seg_text))
@@ -75,19 +76,25 @@ def get_ent(request, ent_fv, com_map, kp_entity_graph):
         kp_ent_map = []
         for noun in noun_node_list:
             kp_Map_list.extend([ele for ele in list(kp_entity_graph[noun]) 
-                                if kp_entity_graph[noun][ele]['edge_type']=='token_kp_map'])
+                                if kp_entity_graph[noun][ele]['edge_type']=='kp_to_tok'])
         
+        #print ("kp_Map_list: ", kp_Map_list)
         for kp in list(set(kp_Map_list)):
             kp_ent_map.extend([ele for ele in list(kp_entity_graph[kp]) if kp_entity_graph.nodes[ele]['node_type']=='entity'])
-
+        #print ("noun_list: ", noun_list)
+        #print ("noun_node_list: ", noun_node_list)
+        #print ("ent_node_list: ", ent_node_list)
+        #print ("noun_node_list: ", noun_node_list)
         kp_ent_map_intrm = deepcopy(kp_ent_map)
         for ent in kp_ent_map_intrm:
             if kp_entity_graph.nodes[ent]['is_ether_node']==True:
+                #print ("-----------------------------TRUE-------------------------", ent)
                 kp_ent_map.append("<ETHER>-"+ent)
                 
+        #print ("KP ENT MAP: ", kp_ent_map)
         kp_ent_map = list(set(kp_ent_map+ent_node_list))
         kp_ent_map = list(set(kp_ent_map)&set(ent_fv))
-
+        
         sent_list = filtered_sents
         sent_fv = [gpt_model.get_text_feats(sent) for sent in sent_list]
         G = nx.Graph()
@@ -142,7 +149,8 @@ def get_ent(request, ent_fv, com_map, kp_entity_graph):
         for pos, fv in agg_fv.items():
             temp_list = []
             for entity in ent_fv.keys():
-                temp_list.append((entity, 1-cosine(ent_fv[entity], fv)))
+                if entity in kp_ent_map:
+                    temp_list.append((entity, 1-cosine(ent_fv[entity], fv)))
             dist_list[pos] = sorted(temp_list, key=lambda kv:kv[1], reverse=True)[:10]
 
         group_ent[groupid] = [e for e_list in dist_list.values() for e in e_list]

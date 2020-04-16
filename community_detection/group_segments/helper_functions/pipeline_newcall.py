@@ -5,7 +5,7 @@ sys.path.append("/home/ray__/ssd/BERT/") # gpt model utils location
 
 sys.path.append("/home/ray__/CS/org/etherlabs/ai-engine/pkg/") # ai-engine pkg location
 from gpt_feat_utils import GPT_Inference
-gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/se/epoch3/", device="cpu") # gpt model location.
+gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/customer_service/epoch3/", device="cpu") # gpt model location.
 
 from main import handler
 

@@ -16,12 +16,14 @@
 
 
 #from scipy.spatial.distance import cityblock
+import sys
+sys.path.append("/home/ray__/ssd/BERT/")
+from gpt_feat_utils import GPT_Inference
+sys.path.append("../../../ai-engine_temp/pkg/")
 import copy
 import numpy as np
 import json
 from copy import deepcopy
-import sys
-sys.path.append("../../../ai-engine_temp/pkg/")
 import text_preprocessing.preprocess as tp
 import extra_preprocess
 # from group_segments.extra_preprocess import format_time
@@ -35,21 +37,19 @@ from collections import Counter
 import logging
 import numpy as np
 from log.logger import setup_server_logger
+from chinese_whispers import chinese_whispers, aggregate_clusters
 logger = logging.getLogger()
 
-sys.path.append("/home/ray__/ssd/BERT/")
-from gpt_feat_utils import GPT_Inference
+
+
 #
 # #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+sim_ep3/", device="cuda")
 # #gpt_model = gpt_feat_utils.GPT_SimInference("/home/arjun/gpt_experiments/models/model_lm+nsp_sim_ep3/", device="cuda")
 #gpt_model = GPT_Inference("/home/arjun/gpt_experiments/engg_models/se+ether_2+1s_ep5_#2/", device="cpu")
 #gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/product/", device="cuda")
 #gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/ether_v2/ether_googleJan13_groupsplit_withstop_4+w_gt3s_lr3e-5/",device="cpu")
-#gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/se/epoch3/", device="cpu")
-gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/customer_service/epoch3/", device="cuda")
-#gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/ai/epoch3/", device="cpu")
-#gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/hr/epoch3/", device="cpu")
-#gpt_model = GPT_Inference("/home/ether/hdd/ether/gpt_domain_minds/sales/epoch3/", device="cpu")
+gpt_model = GPT_Inference("/home/ray__/ssd/BERT/models/customer_service/epoch3/", device="cpu")
+
 # -
 
 
@@ -65,15 +65,13 @@ class community_detection():
     instance_id = None
     compute_fv = True
 
-    def __init__(self, Request, lambda_function, mind_f, compute_fv=True):
+    def __init__(self, Request, lambda_function,compute_fv=True):
         self.segments_list = Request.segments
         self.segments_org = Request.segments_org
         self.segments_order = Request.segments_order
         self.segments_map = Request.segments_map
         self.lambda_function = lambda_function
-        self.mind_features = mind_f
         self.compute_fv = compute_fv
-        self.mind_id = Request.mind_id
         print ("Using ", self.mind_id, " for feature extraction")
         self.context_id = Request.context_id
         self.instance_id = Request.instance_id
@@ -146,21 +144,16 @@ class community_detection():
         if not local:
             transcript_score, mind_score = get_feature_vector(input_list, self.lambda_function, self.mind_features)
         else:
-            transcript_score, mind_score = get_feature_vector_local(input_list, self.lambda_function, self.mind_features, gpt_model)
+            transcript_score = get_feature_vector_local(input_list, self.lambda_function, gpt_model)
         for segment in self.segments_list:
             for sent in segment['originalText']:
                 if sent != '':
                     graph_list[index] = (sent, segment['startTime'], segment['spokenBy'], segment['id'])
                     fv[index] = transcript_score[index]
-                    if segment['id'] in fv_mapped_score.keys():
-                        fv_mapped_score[segment['id']].append(mind_score[index])
-                    else:
-                        fv_mapped_score[segment['id']] = [mind_score[index]]
+                 
                     # fv_mapped_score[index] = (segment['id'], mind_score[index])
                     index += 1
-        for segi in fv_mapped_score.keys():
-            fv_mapped_score[segi] = np.mean(fv_mapped_score[segi])
-        return fv, graph_list, fv_mapped_score
+        return fv, graph_list
     
     def compute_feature_vector_gpt_para(self):
         graph_list = {}
@@ -1018,7 +1011,7 @@ class community_detection():
         return meeting_graph
     
     def itr_communities(self):
-        fv, graph_list, fv_mapped_score = self.compute_feature_vector_gpt(local=True)
+        fv, graph_list = self.compute_feature_vector_gpt(local=True)
         meeting_graph, yetto_prune = self.construct_graph_ns_max(fv, graph_list)
         v = 0
         t = 1.0
@@ -1028,6 +1021,7 @@ class community_detection():
         l_mod = 1
         flag = False
         community_set = None
+        print ("Using Community Algorithm")
         for itr in range(5):
             cs = community.best_partition(meeting_graph_pruned, resolution=t)
             mod = community.modularity(cs, meeting_graph_pruned)
@@ -1038,14 +1032,24 @@ class community_detection():
                 
         if not flag:
             community_set = cs
-        logger.info("Meeting Graph results", extra={"edges before prunning": edge_count, "edges after prunning": meeting_graph_pruned.number_of_edges(), "modularity": mod})    
+########################
+        
+
+#         chinese_whispers(meeting_graph_pruned, weighting='nolog', iterations=20)
+#         community_set = {}
+#         for node in meeting_graph_pruned.nodes():
+#             community_set[node]=meeting_graph_pruned.nodes[node]['label']
+            
+
+########################
+        #logger.info("Meeting Graph results", extra={"edges before prunning": edge_count, "edges after prunning": meeting_graph_pruned.number_of_edges(), "modularity": mod})    
         community_set_sorted = sorted(community_set.items(), key=lambda kv: kv[1], reverse=False)
         community_set_collection = deepcopy(community_set_sorted)
         community_set_collection = sorted(community_set_collection, key = lambda x: x[1], reverse=False)
         community_timerange = self.refine_community(community_set_collection, graph_list)
         pims = self.group_community_by_time(community_timerange)
         pims = self.wrap_community_by_time_refined(pims)
-        pims = self.order_groups_by_score(pims, fv_mapped_score)
+        #pims = self.order_groups_by_score(pims, fv_mapped_score)
         
         #pims = self.combine_pims_by_time(pims)
         #logger.info("Final PIMs", extra={"PIMs": pims})

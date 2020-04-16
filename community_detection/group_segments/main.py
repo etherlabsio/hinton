@@ -11,12 +11,14 @@
 #     language: python
 #     name: python3
 # ---
-
-import json
 import sys
 sys.path.append("../../../ai-engine/pkg")
-from transport import decode_json_request
 from grouper import get_groups
+import json
+
+
+from transport import decode_json_request
+
 from extra_preprocess import format_pims_output
 import sys
 import logging
@@ -52,13 +54,13 @@ def handler(event, context):
     #logger.info("POST request recieved", extra={"request": json_request})
     Request_obj = decode_json_request(json_request)
     mindId = str(json_request['mindId']).lower()
-    mind_dict = load_mind_features(mindId)
+    #mind_dict = load_mind_features(mindId)
     lambda_function = "mind-" + mindId
     if not Request_obj.segments:
         return json({"msg": "No segments to process"})
     topics = {}
     pim = {}
-    topics, pim = get_groups(Request_obj, lambda_function, mind_dict)
+    topics, pim = get_groups(Request_obj, lambda_function)
 
     topics['contextId'] = (json_request)['contextId']
     topics['instanceId'] = (json_request)['instanceId']

@@ -102,7 +102,7 @@ def preprocess_text(text):
             if len(filtered_list)==0:
                 continue
             elif True not in list(map(lambda x: len(x.split(' '))>=1, filtered_list)):
-                if len(filtered_list) > 2:
+                if len(filtered_list) >= 2:
                     pass
                 else:
                     continue
@@ -120,11 +120,11 @@ def preprocess_text(text):
                     continue
 
             mod_texts.append(sent)
-        if len(mod_texts) ==1:
-            if not (len(mod_texts[0].split(' ')) >= 20):
-                return ""
-        #elif len(mod_texts) == 0:
-        #    return ""
+#         if len(mod_texts) ==1:
+#             if not (len(mod_texts[0].split(' ')) >= 20):
+#                 return ""
+        if len(mod_texts) == 0:
+           return ""
         
     else:
         return ""
